@@ -1,0 +1,101 @@
+[
+  {
+    "id": "1784126813036811",
+    "type": "income",
+    "date": "2026-07-15",
+    "desc": "job",
+    "category": "Salary",
+    "amount": 75000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784126845882455",
+    "type": "expense",
+    "date": "2026-03-15",
+    "desc": "bus fare",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129063719769",
+    "type": "expense",
+    "date": "2026-07-15",
+    "desc": "zomato",
+    "category": "Food",
+    "amount": 800.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129092105131",
+    "type": "expense",
+    "date": "2026-05-15",
+    "desc": "phone",
+    "category": "Shopping",
+    "amount": 30000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129135695310",
+    "type": "income",
+    "date": "2026-01-15",
+    "desc": "job",
+    "category": "Salary",
+    "amount": 75000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129155989690",
+    "type": "income",
+    "date": "2026-02-15",
+    "desc": "job",
+    "category": "Salary",
+    "amount": 75000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129173516101",
+    "type": "income",
+    "date": "2026-03-15",
+    "desc": "job",
+    "category": "Salary",
+    "amount": 75000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129202668190",
+    "type": "income",
+    "date": "2026-04-15",
+    "desc": "job",
+    "category": "Salary",
+    "amount": 75000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129231978957",
+    "type": "income",
+    "date": "2026-05-15",
+    "desc": "job",
+    "category": "Salary",
+    "amount": 75000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129251231564",
+    "type": "income",
+    "date": "2026-06-15",
+    "desc": "job",
+    "category": "Salary",
+    "amount": 75000.0,
+    "notes": ""
+  },
+  {
+    "id": "1784129285460428",
+    "type": "expense",
+    "date": "2026-04-15",
+    "desc": "manali",
+    "category": "Travel",
+    "amount": 100000.0,
+    "notes": ""
+  }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1784129092127988",
+    "type": "warning",
+    "title": "Budget Alert: Shopping",
+    "msg": "Shopping spending at 750% of \u20b94,000 budget",
+    "read": false,
+    "ts": "2026-07-15 20:54"
+  },
+  {
+    "id": "1784129285482439",
+    "type": "warning",
+    "title": "Budget Alert: Travel",
+    "msg": "Travel spending at 3333% of \u20b93,000 budget",
+    "read": false,
+    "ts": "2026-07-15 20:58"
+  }
+]
