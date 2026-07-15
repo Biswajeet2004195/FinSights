@@ -4,7 +4,7 @@
     "type": "warning",
     "title": "Budget Alert: Shopping",
     "msg": "Shopping spending at 750% of \u20b94,000 budget",
-    "read": false,
+    "read": true,
     "ts": "2026-07-15 20:54"
   },
   {
@@ -12,7 +12,7 @@
     "type": "warning",
     "title": "Budget Alert: Travel",
     "msg": "Travel spending at 3333% of \u20b93,000 budget",
-    "read": false,
+    "read": true,
     "ts": "2026-07-15 20:58"
   }
 ]
