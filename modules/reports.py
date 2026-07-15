@@ -98,7 +98,15 @@ class ReportMixin(BaseDashboard):
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib import colors
         except ImportError:
-            return messagebox.showerror("Error", "ReportLab is not installed. Please install it with 'pip install reportlab'.")
+            try:
+                import subprocess, sys
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "reportlab"])
+                from reportlab.lib.pagesizes import letter
+                from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+                from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+                from reportlab.lib import colors
+            except Exception as ex:
+                return messagebox.showerror("Error", f"ReportLab is not installed and could not be automatically installed.\nDetail: {ex}")
 
         fn = filedialog.asksaveasfilename(
             defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")],
@@ -286,8 +294,8 @@ class ReportMixin(BaseDashboard):
             from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
         except ImportError:
             try:
-                import subprocess
-                subprocess.check_call(["pip", "install", "openpyxl"])
+                import subprocess, sys
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "openpyxl"])
                 import openpyxl
                 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
             except Exception as ex:
