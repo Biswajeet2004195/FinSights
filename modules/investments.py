@@ -9,16 +9,17 @@ class InvestmentMixin(BaseDashboard):
         self._clear(); self._set_nav("Investments"); self._set_title("Investments")
         pg = self._scrollable(self._cf)
         invs = _ld("investments")
-        total_val  = sum(i["qty"] * i["current_price"] for i in invs)
-        total_cost = sum(i["qty"] * i["buy_price"]     for i in invs)
+        dc = GLOBAL_STATE["display_currency"]
+        total_val  = sum(convert_currency(i["qty"] * i["current_price"], i.get("currency", "INR"), dc) for i in invs)
+        total_cost = sum(convert_currency(i["qty"] * i["buy_price"], i.get("currency", "INR"), dc)     for i in invs)
         total_pl   = total_val - total_cost
         pl_pct     = total_pl / total_cost * 100 if total_cost else 0
 
         top = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); top.pack(fill="x", padx=20, pady=(14, 8))
-        self._kpi(top, "Portfolio Value", fmt_inr(total_val),  "Current",   AC,              "📈").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
-        self._kpi(top, "Total Invested",  fmt_inr(total_cost), "Cost basis", CY,             "💰").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
+        self._kpi(top, "Portfolio Value", fmt_disp(total_val),  "Current",   AC,              "📈").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
+        self._kpi(top, "Total Invested",  fmt_disp(total_cost), "Cost basis", CY,             "💰").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
         pl_clr = GR if total_pl >= 0 else RE
-        self._kpi(top, "Total P&L",  fmt_inr(total_pl), f"{pl_pct:+.1f}%", pl_clr,          "💹").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
+        self._kpi(top, "Total P&L",  fmt_disp(total_pl), f"{pl_pct:+.1f}%", pl_clr,          "💹").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
         self._kpi(top, "Holdings",   str(len(invs)),      "Assets",          GO,              "🗂️").pack(side="left", ipadx=8, ipady=4)
 
         tb = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); tb.pack(fill="x", padx=20, pady=(0, 8))
@@ -28,11 +29,12 @@ class InvestmentMixin(BaseDashboard):
                 {"k": "name",          "lbl": "Asset Name",         "type": "entry"},
                 {"k": "symbol",        "lbl": "Symbol / Ticker",    "type": "entry"},
                 {"k": "type",          "lbl": "Type",               "type": "combo", "opts": INV_TYPES},
+                {"k": "currency",      "lbl": "Currency",           "type": "combo", "opts": SUPPORTED_CURRENCIES},
                 {"k": "qty",           "lbl": "Quantity",           "type": "entry"},
-                {"k": "buy_price",     "lbl": "Buy Price (₹)",      "type": "entry"},
-                {"k": "current_price", "lbl": "Current Price (₹)",  "type": "entry"},
+                {"k": "buy_price",     "lbl": "Buy Price",          "type": "entry"},
+                {"k": "current_price", "lbl": "Current Price",      "type": "entry"},
                 {"k": "notes",         "lbl": "Notes",              "type": "entry"},
-            ], self._save_inv_cb)
+            ], self._save_inv_cb, defaults={"currency": GLOBAL_STATE["display_currency"]})
 
         def _edit():
             sel = tv.selection()
@@ -43,13 +45,14 @@ class InvestmentMixin(BaseDashboard):
                 {"k": "name",          "lbl": "Asset Name",         "type": "entry"},
                 {"k": "symbol",        "lbl": "Symbol / Ticker",    "type": "entry"},
                 {"k": "type",          "lbl": "Type",               "type": "combo", "opts": INV_TYPES},
+                {"k": "currency",      "lbl": "Currency",           "type": "combo", "opts": SUPPORTED_CURRENCIES},
                 {"k": "qty",           "lbl": "Quantity",           "type": "entry"},
-                {"k": "buy_price",     "lbl": "Buy Price (₹)",      "type": "entry"},
-                {"k": "current_price", "lbl": "Current Price (₹)",  "type": "entry"},
+                {"k": "buy_price",     "lbl": "Buy Price",          "type": "entry"},
+                {"k": "current_price", "lbl": "Current Price",      "type": "entry"},
                 {"k": "notes",         "lbl": "Notes",              "type": "entry"},
             ], lambda vals, dlg: self._upd_inv(sel[0], vals, dlg),
                defaults={k: str(inv.get(k, "")) for k in
-                         ["name", "symbol", "type", "qty", "buy_price", "current_price", "notes"]})
+                         ["name", "symbol", "type", "currency", "qty", "buy_price", "current_price", "notes"]})
 
         def _del():
             sel = tv.selection()
@@ -70,6 +73,7 @@ class InvestmentMixin(BaseDashboard):
 
         tv.delete(*tv.get_children())
         for i2, inv in enumerate(invs):
+            curr = inv.get("currency", "INR")
             val  = inv["qty"] * inv["current_price"]
             cost = inv["qty"] * inv["buy_price"]
             pl   = val - cost
@@ -77,6 +81,6 @@ class InvestmentMixin(BaseDashboard):
             tag  = "pl_pos" if pl >= 0 else "pl_neg"
             tv.insert("", "end", iid=inv["id"], tags=(tag,),
                       values=(inv["name"], inv["symbol"], inv["type"],
-                              str(inv["qty"]), fmt_inr(inv["buy_price"]),
-                              fmt_inr(inv["current_price"]),
-                              fmt_inr(val), fmt_inr(pl), f"{plp:+.1f}%"))
+                              str(inv["qty"]), fmt_amt(inv["buy_price"], curr),
+                              fmt_amt(inv["current_price"], curr),
+                              fmt_amt(val, curr), fmt_amt(pl, curr), f"{plp:+.1f}%"))

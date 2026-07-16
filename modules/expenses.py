@@ -9,13 +9,14 @@ class ExpenseMixin(BaseDashboard):
         self._clear(); self._set_nav("Expenses"); self._set_title("Expenses")
         pg = self._scrollable(self._cf)
         trans = _ld("transactions"); cm = curr_m()
-        me = sum(r["amount"] for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
-        ae = sum(r["amount"] for r in trans if r["type"] == "expense")
+        dc = GLOBAL_STATE["display_currency"]
+        me = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
+        ae = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "expense")
 
         top = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); top.pack(fill="x", padx=20, pady=(14, 8))
-        self._kpi(top, "Monthly Expenses",  fmt_inr(me), "Current month", RE, "💸").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
-        self._kpi(top, "All-time Expenses", fmt_inr(ae), "Total",         OR, "📊").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
-        mi = sum(r["amount"] for r in trans if r["type"] == "income" and r["date"].startswith(cm))
+        self._kpi(top, "Monthly Expenses",  fmt_disp(me), "Current month", RE, "💸").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
+        self._kpi(top, "All-time Expenses", fmt_disp(ae), "Total",         OR, "📊").pack(side="left", ipadx=8, ipady=4, padx=(0, 10))
+        mi = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "income" and r["date"].startswith(cm))
         ratio = me / mi * 100 if mi else 0
         self._kpi(top, "Expense Ratio", f"{ratio:.0f}%", "vs this month income", PK, "📉").pack(side="left", ipadx=8, ipady=4)
 
@@ -26,10 +27,11 @@ class ExpenseMixin(BaseDashboard):
                 {"k": "date",     "lbl": "Date (YYYY-MM-DD)", "type": "entry"},
                 {"k": "desc",     "lbl": "Description",       "type": "entry"},
                 {"k": "category", "lbl": "Category",          "type": "combo", "opts": list(_ldd("budgets").keys())},
-                {"k": "amount",   "lbl": "Amount (₹)",        "type": "entry"},
+                {"k": "currency", "lbl": "Currency",          "type": "combo", "opts": SUPPORTED_CURRENCIES},
+                {"k": "amount",   "lbl": "Amount",            "type": "entry"},
                 {"k": "notes",    "lbl": "Notes",             "type": "entry"},
             ], lambda vals, dlg: self._save_trans(vals, "expense", dlg, self.show_expenses),
-               defaults={"date": today()})
+               defaults={"date": today(), "currency": GLOBAL_STATE["display_currency"]})
 
         def _edit():
             sel = tv.selection()
@@ -40,11 +42,12 @@ class ExpenseMixin(BaseDashboard):
                 {"k": "date",     "lbl": "Date (YYYY-MM-DD)", "type": "entry"},
                 {"k": "desc",     "lbl": "Description",       "type": "entry"},
                 {"k": "category", "lbl": "Category",          "type": "combo", "opts": list(_ldd("budgets").keys())},
-                {"k": "amount",   "lbl": "Amount (₹)",        "type": "entry"},
+                {"k": "currency", "lbl": "Currency",          "type": "combo", "opts": SUPPORTED_CURRENCIES},
+                {"k": "amount",   "lbl": "Amount",            "type": "entry"},
                 {"k": "notes",    "lbl": "Notes",             "type": "entry"},
             ], lambda vals, dlg: self._upd_trans(sel[0], vals, dlg, self.show_expenses),
                defaults={"date": rec["date"], "desc": rec["desc"], "category": rec["category"],
-                         "amount": str(rec["amount"]), "notes": rec.get("notes", "")})
+                         "currency": rec.get("currency", "INR"), "amount": str(rec["amount"]), "notes": rec.get("notes", "")})
 
         def _del():
             sel = tv.selection()
@@ -67,4 +70,4 @@ class ExpenseMixin(BaseDashboard):
         recs = sorted([r for r in trans if r["type"] == "expense"],
                       key=lambda r: r["date"], reverse=True)
         self._tv_fill(tv, [(r["id"], r["date"], r["desc"], r["category"],
-                            fmt_inr(r["amount"]), r.get("notes", "")) for r in recs])
+                            fmt_amt(r["amount"], r.get("currency", "INR")), r.get("notes", "")) for r in recs])

@@ -19,6 +19,7 @@ from base_dashboard import BaseDashboard
 from modules.overview import OverviewMixin
 from modules.income import IncomeMixin
 from modules.expenses import ExpenseMixin
+from modules.analytics import AnalyticsMixin
 from modules.budget import BudgetMixin
 from modules.investments import InvestmentMixin
 from modules.goals import GoalMixin
@@ -34,6 +35,7 @@ class FinsightsDashboard(
     OverviewMixin,
     IncomeMixin,
     ExpenseMixin,
+    AnalyticsMixin,
     BudgetMixin,
     InvestmentMixin,
     GoalMixin,
@@ -50,6 +52,11 @@ class FinsightsDashboard(
         self.root = root
         self.username = username
         self.email = email
+        
+        users = _ld_users()
+        user_prof = users.get(email, {})
+        GLOBAL_STATE["display_currency"] = user_prof.get("display_currency", "INR")
+
         self.active_nav = ""
         self._active_canvas = None
         self._setup_win()

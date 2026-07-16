@@ -72,6 +72,7 @@ class BaseDashboard:
             ("🏠", "Overview",      self.show_overview),
             ("💰", "Income",        self.show_income),
             ("💸", "Expenses",      self.show_expenses),
+            ("📈", "Analytics",     self.show_analytics),
             ("📊", "Budget",        self.show_budget),
             ("📈", "Investments",   self.show_investments),
             ("🎯", "Goals",         self.show_goals),
@@ -169,6 +170,14 @@ class BaseDashboard:
             24, HEAD_H // 2, text="Overview",
             font=("Segoe UI", 18, "bold"), fill=TP, anchor="w"
         )
+        
+        # Currency Selector
+        self.currency_var = tk.StringVar(value=GLOBAL_STATE.get("display_currency", "INR"))
+        self.curr_cb = ttk.Combobox(hc, textvariable=self.currency_var, values=SUPPORTED_CURRENCIES, 
+                                    state="readonly", width=5, style="A.TCombobox")
+        self.curr_cb.bind("<<ComboboxSelected>>", self._on_currency_change)
+        self._curr_cb_window = hc.create_window(0, HEAD_H // 2, window=self.curr_cb, anchor="center", tags="curr_cb")
+        
         # Date & Bell (repositioned on resize)
         self._date_txt = hc.create_text(0, HEAD_H // 2, text=datetime.now().strftime("%a, %d %b %Y"), font=("Segoe UI", 10), fill=TS, anchor="center", tags="date")
         self._bell_icon = hc.create_text(0, HEAD_H // 2, text="🔔", font=("Segoe UI Emoji", 16), fill=TP, tags="bell")
@@ -192,12 +201,27 @@ class BaseDashboard:
             hc.delete("border")
             hc.create_line(0, HEAD_H - 1, w, HEAD_H - 1, fill=BD, width=1, tags="border")
             
-            hc.coords("date", w - 160, HEAD_H // 2)
-            hc.coords("bell", w - 60, HEAD_H // 2)
-            self._bell_x = w - 60
+            hc.coords("curr_cb", w - 240, HEAD_H // 2)
+            hc.coords("date", w - 140, HEAD_H // 2)
+            hc.coords("bell", w - 50, HEAD_H // 2)
+            self._bell_x = w - 50
             self._update_bell()
             
         hc.bind("<Configure>", _on_hc_resize)
+
+    def _on_currency_change(self, e=None):
+        new_curr = self.currency_var.get()
+        GLOBAL_STATE["display_currency"] = new_curr
+        
+        users = _ld_users()
+        if self.email in users:
+            users[self.email]["display_currency"] = new_curr
+            _sv_users(users)
+            
+        # Refresh current page
+        nav_map = {name: cmd for icon, name, cmd in self._nav_data}
+        if self.active_nav in nav_map:
+            nav_map[self.active_nav]()
 
     def _update_bell(self):
         hc = self._hc
@@ -552,18 +576,21 @@ class BaseDashboard:
     def _auto_notif(self):
         """Generate budget-exceeded notifications automatically."""
         trans = _ld("transactions"); budgets = _ldd("budgets"); cm = curr_m()
+        dc = GLOBAL_STATE["display_currency"]
         spent_by = defaultdict(float)
         for r in trans:
             if r["type"] == "expense" and r["date"].startswith(cm):
-                spent_by[r["category"]] += r["amount"]
+                spent_by[r["category"]] += convert_currency(r["amount"], r.get("currency", "INR"), dc)
         ns = _ld("notifications")
         existing = {n["title"] for n in ns}
-        for cat, bgt in budgets.items():
+        for cat, b_val in budgets.items():
+            if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
+            bgt = convert_currency(b_val["amount"], b_val["currency"], dc)
             spent = spent_by.get(cat, 0); pct = spent / bgt if bgt else 0
             title = f"Budget Alert: {cat}"
             if pct >= 0.9 and title not in existing:
                 ns.append({"id": mk_id(), "type": "warning", "title": title,
-                            "msg": f"{cat} spending at {int(pct*100)}% of {fmt_inr(bgt)} budget",
+                            "msg": f"{cat} spending at {int(pct*100)}% of {fmt_disp(bgt)} budget",
                             "read": False, "ts": now_ts()})
         _sv("notifications", ns); self._update_bell()
 
@@ -571,18 +598,23 @@ class BaseDashboard:
     def _calc_health(self):
         trans   = _ld("transactions"); budgets = _ldd("budgets")
         goals   = _ld("goals");        invs    = _ld("investments"); cm = curr_m()
-        mi = sum(r["amount"] for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
-        me = sum(r["amount"] for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
+        dc = GLOBAL_STATE["display_currency"]
+        mi = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
+        me = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
         sr     = (mi - me) / mi if mi > 0 else 0
         pts_sr = min(30.0, max(0.0, sr * 150))
         spent_by = defaultdict(float)
         for r in trans:
             if r["type"] == "expense" and r["date"].startswith(cm):
-                spent_by[r["category"]] += r["amount"]
-        cats_ok  = sum(1 for c, b in budgets.items() if spent_by.get(c, 0) <= b)
+                spent_by[r["category"]] += convert_currency(r["amount"], r.get("currency", "INR"), dc)
+        cats_ok = 0
+        for c, b_val in budgets.items():
+            if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
+            b = convert_currency(b_val["amount"], b_val["currency"], dc)
+            if spent_by.get(c, 0) <= b: cats_ok += 1
         pts_bgt  = (cats_ok / len(budgets) * 25) if budgets else 0
         if goals:
-            avg_p = sum(min(1.0, g["saved"] / g["target"]) for g in goals if g["target"] > 0) / len(goals)
+            avg_p = sum(min(1.0, float(g["saved"]) / float(g["target"])) for g in goals if float(g["target"]) > 0) / len(goals)
             pts_g = avg_p * 25
         else:
             pts_g = 0.0
@@ -601,8 +633,11 @@ class BaseDashboard:
         trans = _ld("transactions"); budgets = _ldd("budgets")
         goals = _ld("goals");        invs    = _ld("investments"); cm = curr_m()
         insights = []
-        mi = sum(r["amount"] for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
-        me = sum(r["amount"] for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
+        dc = GLOBAL_STATE["display_currency"]
+        mi = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
+        me = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
+        
+        # Savings Rate Insight
         if mi > 0:
             sr = (mi - me) / mi * 100
             if sr >= 20:
@@ -612,51 +647,102 @@ class BaseDashboard:
                     "bg": "#1c2c1c", "border": GR})
             elif sr > 0:
                 insights.append({"icon": "⚠️", "title": "Savings Rate Needs Work",
-                    "msg": f"Savings rate is {sr:.1f}% this month. Target is 20% ({fmt_inr(mi*0.2)}).",
+                    "msg": f"Savings rate is {sr:.1f}% this month. Target is 20% ({fmt_disp(mi*0.2)}).",
                     "tip": "Try the 50/30/20 rule: 50% needs, 30% wants, 20% savings.",
                     "bg": "#2c2a1c", "border": GO})
             else:
                 insights.append({"icon": "🔴", "title": "Spending Exceeds Income!",
-                    "msg": f"Spent {fmt_inr(me)} vs income of {fmt_inr(mi)} — deficit of {fmt_inr(me - mi)}.",
+                    "msg": f"Spent {fmt_disp(me)} vs income of {fmt_disp(mi)} — deficit of {fmt_disp(me - mi)}.",
                     "tip": "Review discretionary spending and cut non-essentials immediately.",
                     "bg": "#2c1c1c", "border": RE})
+                    
+        # Expense Analysis
         spent_by = defaultdict(float)
+        prev_spent = defaultdict(float)
+        y, m = map(int, cm.split('-'))
+        pm = f"{y-1}-12" if m == 1 else f"{y}-{m-1:02d}"
+        
         for r in trans:
-            if r["type"] == "expense" and r["date"].startswith(cm):
-                spent_by[r["category"]] += r["amount"]
+            if r["type"] == "expense":
+                amt = convert_currency(r["amount"], r.get("currency", "INR"), dc)
+                if r["date"].startswith(cm):
+                    spent_by[r["category"]] += amt
+                elif r["date"].startswith(pm):
+                    prev_spent[r["category"]] += amt
+                    
         if spent_by:
             top_cat = max(spent_by, key=spent_by.get)
             top_amt = spent_by[top_cat]
-            bgt     = budgets.get(top_cat, 0)
+            b_val = budgets.get(top_cat, {"amount": 0, "currency": "INR"})
+            if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
+            bgt = convert_currency(b_val["amount"], b_val["currency"], dc)
             pct_b   = top_amt / bgt * 100 if bgt else 0
             insights.append({"icon": "📊", "title": f"Top Expense: {top_cat}",
-                "msg": f"Highest spending: {top_cat} at {fmt_inr(top_amt)} ({pct_b:.0f}% of budget).",
+                "msg": f"Highest spending: {top_cat} at {fmt_disp(top_amt)} ({pct_b:.0f}% of budget).",
                 "tip": f"Look for small ways to reduce {top_cat} spending next month.",
                 "bg": "#1c222c", "border": AC})
-        for cat, bgt in budgets.items():
+                
+        # Month-over-month spending increases
+        for cat, amt in spent_by.items():
+            if cat in prev_spent and prev_spent[cat] > 0:
+                pct_change = (amt - prev_spent[cat]) / prev_spent[cat] * 100
+                if pct_change > 15: # 15% increase threshold
+                    insights.append({"icon": "📈", "title": f"Spending Spike: {cat}",
+                        "msg": f"{cat} spending increased by {pct_change:.1f}% compared to last month.",
+                        "tip": f"Review your {cat.lower()} expenses to ensure this spike was planned.",
+                        "bg": "#2c1c1c", "border": OR})
+                        
+        # Budget Alerts
+        for cat, b_val in budgets.items():
+            if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
+            bgt = convert_currency(b_val["amount"], b_val["currency"], dc)
             spent = spent_by.get(cat, 0); pct = spent / bgt if bgt else 0
             if pct > 0.9:
                 insights.append({"icon": "⚠️", "title": f"Budget Alert: {cat}",
-                    "msg": f"Used {int(pct*100)}% of {cat} budget. Spent {fmt_inr(spent)} of {fmt_inr(bgt)}.",
+                    "msg": f"Used {int(pct*100)}% of {cat} budget. Spent {fmt_disp(spent)} of {fmt_disp(bgt)}.",
                     "tip": "Pause non-essential spending in this category for the rest of the month.",
                     "bg": "#2c2a1c", "border": GO})
+                    
+        # Goals Progress
         for g in goals[:2]:
-            tgt = g["target"]; saved = g["saved"]; pct = saved / tgt * 100 if tgt else 0
+            tgt = convert_currency(float(g["target"]), g.get("currency", "INR"), dc)
+            saved = convert_currency(float(g["saved"]), g.get("currency", "INR"), dc)
+            pct = saved / tgt * 100 if tgt else 0
             insights.append({"icon": g.get("icon", "🎯"), "title": f"Goal: {g['name']}",
-                "msg": f"{g['name']} is {pct:.0f}% complete. {fmt_inr(saved)} of {fmt_inr(tgt)} saved.",
-                "tip": f"Need {fmt_inr(tgt-saved)} more by {g['deadline']}.",
+                "msg": f"{g['name']} is {pct:.0f}% complete. {fmt_disp(saved)} of {fmt_disp(tgt)} saved.",
+                "tip": f"Need {fmt_disp(tgt-saved)} more by {g.get('deadline', 'target date')}.",
                 "bg": "#1c2c2c", "border": CY})
+                
+        # Investments Analysis
         if invs:
-            pf_val  = sum(i["qty"] * i["current_price"] for i in invs)
-            pf_cost = sum(i["qty"] * i["buy_price"]     for i in invs)
+            pf_val  = sum(convert_currency(i["qty"] * i["current_price"], i.get("currency", "INR"), dc) for i in invs)
+            pf_cost = sum(convert_currency(i["qty"] * i["buy_price"], i.get("currency", "INR"), dc) for i in invs)
+            
+            # Concentration Risk
+            asset_types = defaultdict(float)
+            for i in invs:
+                asset_types[i["type"]] += convert_currency(i["qty"] * i["current_price"], i.get("currency", "INR"), dc)
+            
+            if pf_val > 0:
+                for a_type, val in asset_types.items():
+                    conc = val / pf_val * 100
+                    if conc > 40: # 40% concentration threshold
+                        insights.append({"icon": "⚖️", "title": "Portfolio Concentration",
+                            "msg": f"Your portfolio is heavily concentrated in {a_type} ({conc:.0f}%).",
+                            "tip": "Diversify your investments across different asset classes to reduce risk.",
+                            "bg": "#2c2a1c", "border": GO})
+                        break
+                        
+            # Performance
             pl      = pf_val - pf_cost; plp = pl / pf_cost * 100 if pf_cost else 0
             direction = "up" if pl >= 0 else "down"
             clr  = GR if pl >= 0 else RE; bg = "#1c2c1c" if pl >= 0 else "#2c1c1c"
             icon = "📈" if pl >= 0 else "📉"
             insights.append({"icon": icon, "title": "Portfolio Performance",
-                "msg": f"Portfolio is {direction} {fmt_inr(abs(pl))} ({plp:+.1f}%) overall. Total value: {fmt_inr(pf_val)}.",
+                "msg": f"Portfolio is {direction} {fmt_disp(abs(pl))} ({plp:+.1f}%) overall. Total value: {fmt_disp(pf_val)}.",
                 "tip": "Rebalance if any single asset exceeds 30% of portfolio." if pl > 0 else "Consider rupee-cost averaging during downturns.",
                 "bg": bg, "border": clr})
+                
         return insights
 
     def _draw_gauge(self, canvas, cx, cy, r, score, big=False):

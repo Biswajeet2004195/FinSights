@@ -28,13 +28,19 @@ class BudgetMixin(BaseDashboard):
                 "Miscellaneous": 2000.0
             }
             _sv("budgets", budgets)
+        dc = GLOBAL_STATE["display_currency"]
         spent_by = defaultdict(float)
         for r in trans:
             if r["type"] == "expense" and r["date"].startswith(cm):
-                spent_by[r["category"]] += r["amount"]
+                spent_by[r["category"]] += convert_currency(r["amount"], r.get("currency", "INR"), dc)
 
         cats = list(budgets.keys())
-        total_budget = sum(budgets.get(c, 0) for c in cats)
+        total_budget = 0.0
+        for c in cats:
+            b_val = budgets.get(c, {"amount": 0.0, "currency": "INR"})
+            if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
+            total_budget += convert_currency(b_val["amount"], b_val["currency"], dc)
+            
         total_spent  = sum(spent_by.get(c, 0) for c in cats)
         remaining    = total_budget - total_spent
 
@@ -45,6 +51,7 @@ class BudgetMixin(BaseDashboard):
             def _save(vals, dlg):
                 name = vals.get("name", "").strip()
                 amt  = vals.get("amount", "0").strip()
+                curr = vals.get("currency", "INR")
                 if not name:
                     return messagebox.showwarning("Error", "Category name cannot be empty.")
                 try:
@@ -52,31 +59,37 @@ class BudgetMixin(BaseDashboard):
                 except ValueError:
                     return messagebox.showwarning("Error", "Please enter a valid amount.")
                 bdgts = _ldd("budgets")
-                bdgts[name] = val
+                bdgts[name] = {"amount": val, "currency": curr}
                 _sv("budgets", bdgts)
                 dlg.destroy()
                 self.show_budget()
                 
             self._dialog("Add Budget Category", [
-                {"k": "name",   "lbl": "Category Name", "type": "entry"},
-                {"k": "amount", "lbl": "Monthly Budget Limit (₹)", "type": "entry"},
-            ], _save)
+                {"k": "name",     "lbl": "Category Name", "type": "entry"},
+                {"k": "currency", "lbl": "Currency",      "type": "combo", "opts": SUPPORTED_CURRENCIES},
+                {"k": "amount",   "lbl": "Monthly Budget Limit", "type": "entry"},
+            ], _save, defaults={"currency": GLOBAL_STATE["display_currency"]})
             
         self._tb_btn(tb, "＋ Add Category", _add_cat, AC)
 
         # Summary row
         srow = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); srow.pack(fill="x", padx=20, pady=(0, 14))
-        self._kpi(srow, "Total Budget",   fmt_inr(total_budget), "This month",  AC, "📊").pack(side="left", ipadx=8, ipady=4, padx=(0, 10), expand=True, fill="both")
-        self._kpi(srow, "Total Spent",    fmt_inr(total_spent),  "This month",  OR, "💸").pack(side="left", ipadx=8, ipady=4, padx=(0, 10), expand=True, fill="both")
+        self._kpi(srow, "Total Budget",   fmt_disp(total_budget), "This month",  AC, "📊").pack(side="left", ipadx=8, ipady=4, padx=(0, 10), expand=True, fill="both")
+        self._kpi(srow, "Total Spent",    fmt_disp(total_spent),  "This month",  OR, "💸").pack(side="left", ipadx=8, ipady=4, padx=(0, 10), expand=True, fill="both")
         rc = GR if remaining >= 0 else RE
-        self._kpi(srow, "Remaining",      fmt_inr(remaining),    "Available",   rc, "💎").pack(side="left", ipadx=8, ipady=4, expand=True, fill="both")
+        self._kpi(srow, "Remaining",      fmt_disp(remaining),    "Available",   rc, "💎").pack(side="left", ipadx=8, ipady=4, expand=True, fill="both")
 
         # Category cards (2 per row)
         for row_i in range(0, len(cats), 2):
             pair = cats[row_i:row_i + 2]
             rw = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); rw.pack(fill="x", padx=20, pady=5)
             for cat in pair:
-                bgt   = budgets.get(cat, 0.0)
+                b_val = budgets.get(cat, {"amount": 0.0, "currency": "INR"})
+                if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
+                
+                bgt_orig_amt = b_val["amount"]
+                bgt_orig_curr = b_val["currency"]
+                bgt = convert_currency(bgt_orig_amt, bgt_orig_curr, dc)
                 spent = spent_by.get(cat, 0.0)
                 pct   = min(1.0, spent / bgt) if bgt > 0 else (0.0 if spent == 0 else 1.0)
                 bar_clr = GR if pct < 0.7 else GO if pct < 0.9 else RE
@@ -96,11 +109,22 @@ class BudgetMixin(BaseDashboard):
                 tk.Label(hr, text=f"  {cat}", font=("Segoe UI Semibold", 11), bg=CB, fg=TP).pack(side="left")
 
                 # Edit & Delete Buttons
-                def _eb(c=cat, b=bgt):
+                def _eb(c=cat, b_amt=bgt_orig_amt, b_curr=bgt_orig_curr):
+                    def _save_bgt(vals, dlg):
+                        try:
+                            val = float(vals.get("amount", "0"))
+                        except ValueError:
+                            return messagebox.showwarning("Error", "Invalid amount")
+                        bdgts = _ldd("budgets")
+                        bdgts[c] = {"amount": val, "currency": vals.get("currency", "INR")}
+                        _sv("budgets", bdgts)
+                        dlg.destroy()
+                        self.show_budget()
+                        
                     self._dialog(f"Set Budget — {c}", [
-                        {"k": "amount", "lbl": "Monthly Budget (₹)", "type": "entry"},
-                    ], lambda vals, dlg, cat2=c: self._set_budget(cat2, vals, dlg),
-                       defaults={"amount": str(b)})
+                        {"k": "currency", "lbl": "Currency", "type": "combo", "opts": SUPPORTED_CURRENCIES},
+                        {"k": "amount", "lbl": "Monthly Budget Limit", "type": "entry"},
+                    ], _save_bgt, defaults={"amount": str(b_amt), "currency": b_curr})
                        
                 def _db(c=cat):
                     if messagebox.askyesno("Confirm", f"Delete the budget category '{c}'?"):
@@ -133,7 +157,7 @@ class BudgetMixin(BaseDashboard):
 
                 # Stats
                 sr = ctk.CTkFrame(cardi, fg_color=CB, corner_radius=10); sr.pack(fill="x", padx=14, pady=(0, 10))
-                tk.Label(sr, text=f"Spent: {fmt_inr(spent)}", font=("Segoe UI Light", 9), bg=CB, fg=TS).pack(side="left")
-                tk.Label(sr, text=f"Budget: {fmt_inr(bgt)}", font=("Segoe UI Light", 9), bg=CB, fg=TH).pack(side="left", padx=14)
+                tk.Label(sr, text=f"Spent: {fmt_disp(spent)}", font=("Segoe UI Light", 9), bg=CB, fg=TS).pack(side="left")
+                tk.Label(sr, text=f"Budget: {fmt_disp(bgt)}", font=("Segoe UI Light", 9), bg=CB, fg=TH).pack(side="left", padx=14)
                 tk.Label(sr, text=status, font=("Segoe UI Semibold", 9), bg=CB, fg=st_clr).pack(side="right")
         ctk.CTkFrame(pg, fg_color=BG, height=20, corner_radius=10).pack()

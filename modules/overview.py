@@ -25,19 +25,20 @@ class OverviewMixin(BaseDashboard):
 
         # ── KPI row ──────────────────────────────────────────────────────────────
         trans = _ld("transactions"); cm = curr_m()
-        mi = sum(r["amount"] for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
-        me = sum(r["amount"] for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
+        dc = GLOBAL_STATE["display_currency"]
+        mi = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
+        me = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
         ms = mi - me
         invs = _ld("investments")
-        pv = sum(i["qty"] * i["current_price"] for i in invs)
+        pv = sum(convert_currency(i["qty"] * i["current_price"], i.get("currency", "INR"), dc) for i in invs)
 
         krow = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10)
         krow.pack(fill="x", padx=20, pady=(0, 10))
         for title, val, sub, clr, ico, cmd in [
-            ("Total Income",    fmt_inr(mi), "This month", GR, "💰", self.show_income),
-            ("Total Expenses",  fmt_inr(me), "This month", RE, "💸", self.show_expenses),
-            ("Net Savings",     fmt_inr(ms), "This month", CY, "💎", self.show_budget),
-            ("Portfolio Value", fmt_inr(pv), "All investments", GO, "📈", self.show_investments),
+            ("Total Income",    fmt_disp(mi), "This month", GR, "💰", self.show_income),
+            ("Total Expenses",  fmt_disp(me), "This month", RE, "💸", self.show_expenses),
+            ("Net Savings",     fmt_disp(ms), "This month", CY, "💎", self.show_budget),
+            ("Portfolio Value", fmt_disp(pv), "All investments", GO, "📈", self.show_investments),
         ]:
             k = self._kpi(krow, title, val, sub, color=clr, icon=ico, cmd=cmd)
             k.pack(side="left", fill="both", expand=True, padx=(0, 10), ipady=4)
@@ -111,9 +112,10 @@ class OverviewMixin(BaseDashboard):
         spent_by = defaultdict(float)
         for r in trans:
             if r["type"] == "expense" and r["date"].startswith(cm):
-                spent_by[r["category"]] += r["amount"]
+                spent_by[r["category"]] += convert_currency(r["amount"], r.get("currency", "INR"), dc)
         for cat in EXPENSE_CATS[:6]:
-            bgt = budgets.get(cat, 5000); spent = spent_by.get(cat, 0)
+            bgt = convert_currency(budgets.get(cat, 5000), "INR", dc)  # Assuming budgets stored in INR without currency key
+            spent = spent_by.get(cat, 0)
             pct3 = min(1, spent / bgt) if bgt else 0
             clr3 = GR if pct3 < 0.7 else GO if pct3 < 0.9 else RE
             rw = ctk.CTkFrame(bfi, fg_color=CB, corner_radius=10); rw.pack(fill="x", padx=14, pady=3)
@@ -146,7 +148,8 @@ class OverviewMixin(BaseDashboard):
                          bg=CB, fg=TH, width=5).pack(side="left")
                 tk.Label(rw, text=r["desc"][:20], font=("Segoe UI", 9),
                          bg=CB, fg=TS).pack(side="left", padx=4)
-                tk.Label(rw, text=f"{sign}{fmt_inr(r['amount'])}",
+                converted_amt = convert_currency(r["amount"], r.get("currency", "INR"), dc)
+                tk.Label(rw, text=f"{sign}{fmt_disp(converted_amt)}",
                          font=("Segoe UI", 9, "bold"), bg=CB, fg=clr4
                          ).pack(side="right", padx=4)
         else:
@@ -157,6 +160,39 @@ class OverviewMixin(BaseDashboard):
                      text="Use  💰 Income  or  💸 Expenses\nto add your first entry",
                      font=("Segoe UI", 9), bg=CB, fg=TH, justify="center").pack(pady=(4, 0))
         ctk.CTkFrame(rfi, fg_color=CB, height=6, corner_radius=10).pack()
+
+        # ── Financial Forecast ───────────────────────────────────────────────────
+        ctk.CTkFrame(pg, fg_color=BD, height=1, corner_radius=10).pack(fill="x", padx=20, pady=(4, 12))
+        tk.Label(pg, text="🔮  Financial Forecast", font=("Segoe UI Semibold", 13),
+                 bg=BG, fg=TP).pack(anchor="w", padx=20, pady=(0, 8))
+        
+        ff = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10)
+        ff.pack(fill="x", padx=20, pady=(0, 10))
+
+        today_dt = datetime.now()
+        import calendar
+        _, last_day = calendar.monthrange(today_dt.year, today_dt.month)
+        current_day = today_dt.day
+        remaining_days = last_day - current_day
+        
+        if current_day > 0 and me > 0:
+            avg_daily = me / current_day
+            forecast_remaining = avg_daily * remaining_days
+            total_expected_expenses = me + forecast_remaining
+            expected_savings = mi - total_expected_expenses
+            confidence = min(99, int((current_day / last_day) * 100))
+        else:
+            total_expected_expenses = 0
+            expected_savings = mi
+            confidence = 0
+            
+        for title, val, sub, clr, ico in [
+            ("Forecasted Expenses", fmt_disp(total_expected_expenses), f"By month end", OR, "📈"),
+            ("Expected Savings", fmt_disp(expected_savings), f"By month end", BL, "💎"),
+            ("Forecast Confidence", f"{confidence}%", f"Based on {current_day} days data", PR, "🎯"),
+        ]:
+            k = self._kpi(ff, title, val, sub, color=clr, icon=ico)
+            k.pack(side="left", fill="both", expand=True, padx=(0, 10) if title != "Forecast Confidence" else 0, ipady=4)
 
         # ── Quick AI Insights ────────────────────────────────────────────────────
         ctk.CTkFrame(pg, fg_color=BD, height=1, corner_radius=10).pack(fill="x", padx=20, pady=(4, 10))

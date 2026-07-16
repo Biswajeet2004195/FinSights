@@ -23,7 +23,8 @@ __all__ = [
     'BG', 'SB', 'CB', 'CB2', 'BD', 'AC', 'CY', 'GO', 'GR', 'RE', 'OR', 'PK', 'BL', 'PR', 'TP', 'TS', 'TH', 'EN',
     'SIDE_W', 'HEAD_H', 'WIN_W', 'WIN_H',
     'EXPENSE_CATS', 'INCOME_CATS', 'INV_TYPES', 'CAT_CLR',
-    'fmt_inr', 'mk_id', 'today', 'curr_m', 'now_ts',
+    'fmt_inr', 'fmt_amt', 'fmt_disp', 'GLOBAL_STATE', 'SUPPORTED_CURRENCIES', 'convert_currency',
+    'mk_id', 'today', 'curr_m', 'now_ts',
     '_ld_users', '_sv_users', 'fade_color',
     'ctk', 'CR_CARD', 'CR_BTN', 'CR_ENT',
     'hash_password', 'verify_password'
@@ -95,9 +96,23 @@ CAT_CLR = {
     "Investment Returns": PR, "Rental": PK,      "Other": TS,
 }
 
+from currency_utils import format_amount, convert_currency, SUPPORTED_CURRENCIES
+
+GLOBAL_STATE = {
+    "display_currency": "INR"
+}
+
+def fmt_amt(n, from_curr="INR"):
+    converted = convert_currency(n, from_curr, GLOBAL_STATE["display_currency"])
+    return format_amount(converted, GLOBAL_STATE["display_currency"])
+
+def fmt_disp(n):
+    # For amounts already converted to display_currency
+    return format_amount(n, GLOBAL_STATE["display_currency"])
+
 def fmt_inr(n):
-    n = float(n); neg = n < 0; n = abs(n)
-    return f"{'−' if neg else ''}₹{n:,.0f}"
+    # Alias for backward compatibility if I miss some replacements
+    return fmt_amt(n, "INR")
 
 def mk_id():
     import time, random

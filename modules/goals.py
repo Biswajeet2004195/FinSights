@@ -15,10 +15,11 @@ class GoalMixin(BaseDashboard):
         def _add():
             self._dialog("Add New Goal", [
                 {"k": "name",     "lbl": "Goal Name",                 "type": "entry"},
-                {"k": "target",   "lbl": "Target Amount (₹)",         "type": "entry"},
-                {"k": "saved",    "lbl": "Already Saved (₹)",         "type": "entry"},
+                {"k": "currency", "lbl": "Currency",                  "type": "combo", "opts": SUPPORTED_CURRENCIES},
+                {"k": "target",   "lbl": "Target Amount",             "type": "entry"},
+                {"k": "saved",    "lbl": "Already Saved",             "type": "entry"},
                 {"k": "deadline", "lbl": "Target Date (YYYY-MM-DD)",  "type": "entry"},
-            ], self._save_goal_cb, defaults={"saved": "0"})
+            ], self._save_goal_cb, defaults={"saved": "0", "currency": GLOBAL_STATE["display_currency"]})
 
         self._tb_btn(tb, "＋  Add Goal", _add, AC)
 
@@ -33,6 +34,7 @@ class GoalMixin(BaseDashboard):
             pair = goals[i:i + 2]
             rw = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); rw.pack(fill="x", padx=20, pady=6)
             for g in pair:
+                curr   = g.get("currency", "INR")
                 tgt    = float(g["target"]); saved = float(g["saved"])
                 pct    = min(1.0, saved / tgt) if tgt > 0 else 0
                 try:
@@ -61,14 +63,14 @@ class GoalMixin(BaseDashboard):
                 ri = ctk.CTkFrame(cont, fg_color=CB, corner_radius=10); ri.pack(side="left", fill="both", expand=True, padx=14)
                 tk.Label(ri, text=f"{g['name']}",
                          font=("Segoe UI", 13, "bold"), bg=CB, fg=TP).pack(anchor="w")
-                tk.Label(ri, text=f"Target: {fmt_inr(tgt)}",
+                tk.Label(ri, text=f"Target: {fmt_amt(tgt, curr)}",
                          font=("Segoe UI", 10), bg=CB, fg=TS).pack(anchor="w", pady=(4, 0))
-                tk.Label(ri, text=f"Saved: {fmt_inr(saved)}  ({int(pct*100)}%)",
+                tk.Label(ri, text=f"Saved: {fmt_amt(saved, curr)}  ({int(pct*100)}%)",
                          font=("Segoe UI", 10, "bold"), bg=CB, fg=bar_clr).pack(anchor="w")
                 tk.Label(ri, text=f"Deadline: {g['deadline']}  •  {max(0, days_left)} days left",
                          font=("Segoe UI", 9), bg=CB, fg=TH).pack(anchor="w", pady=(2, 0))
                 if mneed > 0 and pct < 1:
-                    tk.Label(ri, text=f"Need {fmt_inr(mneed)}/month to hit goal",
+                    tk.Label(ri, text=f"Need {fmt_amt(mneed, curr)}/month to hit goal",
                              font=("Segoe UI", 9), bg=CB, fg=CY).pack(anchor="w")
 
                 # Edit/Delete
@@ -77,11 +79,12 @@ class GoalMixin(BaseDashboard):
                 def _edit_g(gid=g["id"], gd=dict(g)):
                     self._dialog("Edit Goal", [
                         {"k": "name",     "lbl": "Goal Name",                "type": "entry"},
-                        {"k": "target",   "lbl": "Target (₹)",               "type": "entry"},
-                        {"k": "saved",    "lbl": "Saved (₹)",                "type": "entry"},
+                        {"k": "currency", "lbl": "Currency",                 "type": "combo", "opts": SUPPORTED_CURRENCIES},
+                        {"k": "target",   "lbl": "Target",                   "type": "entry"},
+                        {"k": "saved",    "lbl": "Saved",                    "type": "entry"},
                         {"k": "deadline", "lbl": "Deadline (YYYY-MM-DD)",    "type": "entry"},
                     ], lambda vals, dlg: self._upd_goal(gid, vals, dlg),
-                       defaults={k: str(gd[k]) for k in ["name", "target", "saved", "deadline"]})
+                       defaults={k: str(gd.get(k, "INR" if k == "currency" else "")) for k in ["name", "currency", "target", "saved", "deadline"]})
 
                 def _del_g(gid=g["id"]):
                     if messagebox.askyesno("Delete", "Delete this goal?"):
