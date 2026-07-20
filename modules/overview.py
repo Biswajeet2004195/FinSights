@@ -108,13 +108,14 @@ class OverviewMixin(BaseDashboard):
         ctk.CTkFrame(bfi, fg_color=CY, height=3, corner_radius=10).pack(fill="x")
         tk.Label(bfi, text="📊  Budget Status", font=("Segoe UI Semibold", 11),
                  bg=CB, fg=TP).pack(anchor="w", padx=14, pady=(10, 4))
-        budgets = _ldd("budgets")
+        budgets = get_budgets_for_month(curr_m())
         spent_by = defaultdict(float)
         for r in trans:
             if r["type"] == "expense" and r["date"].startswith(cm):
                 spent_by[r["category"]] += convert_currency(r["amount"], r.get("currency", "INR"), dc)
         for cat in EXPENSE_CATS[:6]:
-            bgt = convert_currency(budgets.get(cat, 5000), "INR", dc)  # Assuming budgets stored in INR without currency key
+            b_val = budgets.get(cat, {"amount": 5000.0, "currency": "INR"})
+            bgt = convert_currency(b_val["amount"], b_val["currency"], dc)
             spent = spent_by.get(cat, 0)
             pct3 = min(1, spent / bgt) if bgt else 0
             clr3 = GR if pct3 < 0.7 else GO if pct3 < 0.9 else RE

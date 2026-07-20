@@ -178,8 +178,17 @@ class BaseDashboard:
         self.curr_cb.bind("<<ComboboxSelected>>", self._on_currency_change)
         self._curr_cb_window = hc.create_window(0, HEAD_H // 2, window=self.curr_cb, anchor="center", tags="curr_cb")
         
+        # Month Selector
+        import datetime
+        sm = GLOBAL_STATE.get("selected_month", datetime.datetime.now().strftime("%Y-%m"))
+        sm_lbl = datetime.datetime.strptime(sm, "%Y-%m").strftime("%B %Y")
+        self._month_btn = hc.create_text(0, HEAD_H // 2, text=f"📅 {sm_lbl} ▼", font=("Segoe UI", 10, "bold"), fill=TP, anchor="center", tags="month_sel")
+        hc.tag_bind("month_sel", "<Button-1>", lambda e: self._show_month_picker())
+        hc.tag_bind("month_sel", "<Enter>",  lambda e: hc.config(cursor="hand2"))
+        hc.tag_bind("month_sel", "<Leave>",  lambda e: hc.config(cursor=""))
+        
         # Date & Bell (repositioned on resize)
-        self._date_txt = hc.create_text(0, HEAD_H // 2, text=datetime.now().strftime("%a, %d %b %Y"), font=("Segoe UI", 10), fill=TS, anchor="center", tags="date")
+        self._date_txt = hc.create_text(0, HEAD_H // 2, text=datetime.datetime.now().strftime("%a, %d %b %Y"), font=("Segoe UI", 10), fill=TS, anchor="center", tags="date")
         self._bell_icon = hc.create_text(0, HEAD_H // 2, text="🔔", font=("Segoe UI Emoji", 16), fill=TP, tags="bell")
         
         hc.tag_bind("bell", "<Button-1>", lambda e: self.show_notifications())
@@ -201,10 +210,11 @@ class BaseDashboard:
             hc.delete("border")
             hc.create_line(0, HEAD_H - 1, w, HEAD_H - 1, fill=BD, width=1, tags="border")
             
-            hc.coords("curr_cb", w - 240, HEAD_H // 2)
-            hc.coords("date", w - 140, HEAD_H // 2)
-            hc.coords("bell", w - 50, HEAD_H // 2)
-            self._bell_x = w - 50
+            hc.coords("curr_cb", w - 480, HEAD_H // 2)
+            hc.coords("month_sel", w - 320, HEAD_H // 2)
+            hc.coords("date", w - 160, HEAD_H // 2)
+            hc.coords("bell", w - 40, HEAD_H // 2)
+            self._bell_x = w - 40
             self._update_bell()
             
         hc.bind("<Configure>", _on_hc_resize)
@@ -222,6 +232,50 @@ class BaseDashboard:
         nav_map = {name: cmd for icon, name, cmd in self._nav_data}
         if self.active_nav in nav_map:
             nav_map[self.active_nav]()
+
+    def _show_month_picker(self):
+        dlg = tk.Toplevel(self.root)
+        dlg.title("Select Month")
+        dlg.geometry("300x260")
+        dlg.configure(bg=BG)
+        dlg.transient(self.root)
+        dlg.grab_set()
+        
+        sel_m = GLOBAL_STATE.get("selected_month", datetime.now().strftime("%Y-%m"))
+        y_str, m_str = sel_m.split('-')
+        current_year = tk.IntVar(value=int(y_str))
+        
+        hf = tk.Frame(dlg, bg=BG)
+        hf.pack(fill="x", pady=15)
+        
+        tk.Button(hf, text="<", bg=CB2, fg=TP, bd=0, width=3, cursor="hand2", command=lambda: current_year.set(current_year.get() - 1)).pack(side="left", padx=20)
+        tk.Label(hf, textvariable=current_year, font=("Segoe UI", 12, "bold"), bg=BG, fg=TP).pack(side="left", expand=True)
+        tk.Button(hf, text=">", bg=CB2, fg=TP, bd=0, width=3, cursor="hand2", command=lambda: current_year.set(current_year.get() + 1)).pack(side="right", padx=20)
+        
+        grid_f = tk.Frame(dlg, bg=BG)
+        grid_f.pack(expand=True, fill="both", padx=15, pady=(0, 15))
+        
+        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        
+        def _apply_month(m_idx):
+            new_m = f"{current_year.get()}-{m_idx:02d}"
+            GLOBAL_STATE["selected_month"] = new_m
+            import datetime
+            d = datetime.datetime.strptime(new_m, "%Y-%m")
+            self._hc.itemconfig("month_sel", text=f"📅 {d.strftime('%B %Y')} ▼")
+            dlg.destroy()
+            
+            nav_map = {name: cmd for icon, name, cmd in self._nav_data}
+            if self.active_nav in nav_map:
+                nav_map[self.active_nav]()
+                
+        for i, m_name in enumerate(months):
+            r, c = divmod(i, 4)
+            btn = tk.Button(grid_f, text=m_name, font=("Segoe UI", 10), bg=CB, fg=TP, bd=0, cursor="hand2",
+                            command=lambda idx=i+1: _apply_month(idx))
+            btn.grid(row=r, column=c, padx=3, pady=3, sticky="nsew")
+            grid_f.grid_columnconfigure(c, weight=1)
+            grid_f.grid_rowconfigure(r, weight=1)
 
     def _update_bell(self):
         hc = self._hc
@@ -487,8 +541,10 @@ class BaseDashboard:
         if not vals.get("desc", "").strip():
             return messagebox.showerror("Error", "Description is required.")
         recs = _ld("transactions")
+        dt = vals.get("date", default_date())
         recs.append({"id": mk_id(), "type": ttype,
-                     "date": vals.get("date", today()),
+                     "date": dt,
+                     "month": dt[:7],
                      "desc": vals["desc"],
                      "category": vals.get("category", ""),
                      "amount": amt,
@@ -502,7 +558,8 @@ class BaseDashboard:
         recs = _ld("transactions")
         for r in recs:
             if r["id"] == iid:
-                r.update({"date": vals["date"], "desc": vals["desc"],
+                dt = vals["date"]
+                r.update({"date": dt, "month": dt[:7], "desc": vals["desc"],
                            "category": vals["category"], "amount": amt,
                            "notes": vals.get("notes", "")})
         _sv("transactions", recs); dlg.destroy(); refresh()
@@ -540,8 +597,8 @@ class BaseDashboard:
     def _set_budget(self, cat, vals, dlg):
         try:   amt = float(vals["amount"])
         except: return messagebox.showerror("Error", "Amount must be a number.")
-        b = _ldd("budgets")
-        b[cat] = amt; _sv("budgets", b); dlg.destroy(); self.show_budget()
+        save_budget_for_month(curr_m(), cat, amt, vals.get("currency", "INR"))
+        dlg.destroy(); self.show_budget()
 
     def _save_goal_cb(self, vals, dlg):
         try:   tgt = float(vals["target"]); saved = float(vals["saved"])
@@ -575,7 +632,7 @@ class BaseDashboard:
 
     def _auto_notif(self):
         """Generate budget-exceeded notifications automatically."""
-        trans = _ld("transactions"); budgets = _ldd("budgets"); cm = curr_m()
+        trans = _ld("transactions"); budgets = get_budgets_for_month(curr_m()); cm = curr_m()
         dc = GLOBAL_STATE["display_currency"]
         spent_by = defaultdict(float)
         for r in trans:
@@ -596,7 +653,7 @@ class BaseDashboard:
 
     # ── Calculation & Drawing Helpers ─────────────────────────────────────────────
     def _calc_health(self):
-        trans   = _ld("transactions"); budgets = _ldd("budgets")
+        trans   = _ld("transactions"); budgets = get_budgets_for_month(curr_m())
         goals   = _ld("goals");        invs    = _ld("investments"); cm = curr_m()
         dc = GLOBAL_STATE["display_currency"]
         mi = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
@@ -630,7 +687,7 @@ class BaseDashboard:
         return round(total), breakdown
 
     def _gen_insights(self):
-        trans = _ld("transactions"); budgets = _ldd("budgets")
+        trans = _ld("transactions"); budgets = get_budgets_for_month(curr_m())
         goals = _ld("goals");        invs    = _ld("investments"); cm = curr_m()
         insights = []
         dc = GLOBAL_STATE["display_currency"]

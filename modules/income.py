@@ -29,7 +29,7 @@ class IncomeMixin(BaseDashboard):
                 {"k": "amount",   "lbl": "Amount",            "type": "entry"},
                 {"k": "notes",    "lbl": "Notes",             "type": "entry"},
             ], lambda vals, dlg: self._save_trans(vals, "income", dlg, self.show_income),
-               defaults={"date": today(), "currency": GLOBAL_STATE["display_currency"]})
+               defaults={"date": default_date(), "currency": GLOBAL_STATE["display_currency"]})
 
         def _edit():
             sel = tv.selection()

@@ -25,6 +25,7 @@ __all__ = [
     'EXPENSE_CATS', 'INCOME_CATS', 'INV_TYPES', 'CAT_CLR',
     'fmt_inr', 'fmt_amt', 'fmt_disp', 'GLOBAL_STATE', 'SUPPORTED_CURRENCIES', 'convert_currency',
     'mk_id', 'today', 'curr_m', 'now_ts',
+    'get_all_budgets', 'get_budgets_for_month', 'save_budget_for_month', 'delete_budget_for_month',
     '_ld_users', '_sv_users', 'fade_color',
     'ctk', 'CR_CARD', 'CR_BTN', 'CR_ENT',
     'hash_password', 'verify_password'
@@ -98,8 +99,10 @@ CAT_CLR = {
 
 from currency_utils import format_amount, convert_currency, SUPPORTED_CURRENCIES
 
+from datetime import datetime
 GLOBAL_STATE = {
-    "display_currency": "INR"
+    "display_currency": "INR",
+    "selected_month": datetime.now().strftime("%Y-%m")
 }
 
 def fmt_amt(n, from_curr="INR"):
@@ -119,15 +122,76 @@ def mk_id():
     return f"{int(time.time()*1000)}{random.randint(100, 999)}"
 
 def today():   return datetime.now().strftime("%Y-%m-%d")
-def curr_m():  return datetime.now().strftime("%Y-%m")
+def curr_m():  return GLOBAL_STATE.get("selected_month", datetime.now().strftime("%Y-%m"))
+def default_date():
+    sys_m = datetime.now().strftime("%Y-%m")
+    sel_m = GLOBAL_STATE.get("selected_month", sys_m)
+    return today() if sel_m == sys_m else f"{sel_m}-01"
+
 def now_ts():  return datetime.now().strftime("%Y-%m-%d %H:%M")
+
+def get_all_budgets():
+    if not os.path.exists(_p("budgets")):
+        return []
+    with open(_p("budgets"), "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+        except Exception:
+            return []
+            
+    if isinstance(data, dict):
+        new_data = []
+        cm = curr_m()
+        for cat, val in data.items():
+            amt = val["amount"] if isinstance(val, dict) else float(val)
+            curr = val["currency"] if isinstance(val, dict) else "INR"
+            new_data.append({
+                "month": cm,
+                "category": cat,
+                "amount": amt,
+                "currency": curr
+            })
+        _sv("budgets", new_data)
+        return new_data
+    return data if isinstance(data, list) else []
+
+def get_budgets_for_month(month):
+    all_b = get_all_budgets()
+    res = {}
+    for b in all_b:
+        if b.get("month") == month:
+            res[b["category"]] = {"amount": float(b.get("amount", 0)), "currency": b.get("currency", "INR")}
+    return res
+
+def save_budget_for_month(month, category, amount, currency="INR"):
+    all_b = get_all_budgets()
+    found = False
+    for b in all_b:
+        if b.get("month") == month and b.get("category") == category:
+            b["amount"] = float(amount)
+            b["currency"] = currency
+            found = True
+            break
+    if not found:
+        all_b.append({
+            "month": month,
+            "category": category,
+            "amount": float(amount),
+            "currency": currency
+        })
+    _sv("budgets", all_b)
+
+def delete_budget_for_month(month, category):
+    all_b = get_all_budgets()
+    all_b = [b for b in all_b if not (b.get("month") == month and b.get("category") == category)]
+    _sv("budgets", all_b)
 
 def _seed():
     """Create empty data stores on first run. No pre-loaded values."""
     if not os.path.exists(_p("transactions")):
         _sv("transactions", [])
     if not os.path.exists(_p("budgets")):
-        _sv("budgets", {})
+        _sv("budgets", [])
     if not os.path.exists(_p("investments")):
         _sv("investments", [])
     if not os.path.exists(_p("goals")):
@@ -135,7 +199,23 @@ def _seed():
     if not os.path.exists(_p("notifications")):
         _sv("notifications", [])
 
+def _migrate_transactions():
+    """Add 'month' field to any transaction missing it."""
+    try:
+        trans = _ld("transactions")
+        if trans:
+            modified = False
+            for r in trans:
+                if "month" not in r:
+                    r["month"] = r["date"][:7] if "date" in r else datetime.now().strftime("%Y-%m")
+                    modified = True
+            if modified:
+                _sv("transactions", trans)
+    except Exception:
+        pass
+
 _seed()
+_migrate_transactions()
 
 # ── Color Fading Hover Animation Engine ──────────────────────────────────────
 _active_fades = {}

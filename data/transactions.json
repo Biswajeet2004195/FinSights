@@ -6,7 +6,8 @@
     "desc": "job",
     "category": "Salary",
     "amount": 75000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-07"
   },
   {
     "id": "1784126845882455",
@@ -15,7 +16,8 @@
     "desc": "bus fare",
     "category": "Transportation",
     "amount": 3000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-03"
   },
   {
     "id": "1784129063719769",
@@ -24,7 +26,8 @@
     "desc": "zomato",
     "category": "Food",
     "amount": 800.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-07"
   },
   {
     "id": "1784129092105131",
@@ -33,7 +36,8 @@
     "desc": "phone",
     "category": "Shopping",
     "amount": 30000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-05"
   },
   {
     "id": "1784129135695310",
@@ -42,7 +46,8 @@
     "desc": "job",
     "category": "Salary",
     "amount": 75000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-01"
   },
   {
     "id": "1784129155989690",
@@ -51,7 +56,8 @@
     "desc": "job",
     "category": "Salary",
     "amount": 75000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-02"
   },
   {
     "id": "1784129173516101",
@@ -60,7 +66,8 @@
     "desc": "job",
     "category": "Salary",
     "amount": 75000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-03"
   },
   {
     "id": "1784129202668190",
@@ -69,7 +76,8 @@
     "desc": "job",
     "category": "Salary",
     "amount": 75000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-04"
   },
   {
     "id": "1784129231978957",
@@ -78,7 +86,8 @@
     "desc": "job",
     "category": "Salary",
     "amount": 75000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-05"
   },
   {
     "id": "1784129251231564",
@@ -87,15 +96,17 @@
     "desc": "job",
     "category": "Salary",
     "amount": 75000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-06"
   },
   {
     "id": "1784129285460428",
     "type": "expense",
     "date": "2026-04-15",
     "desc": "manali",
-    "category": "Travel",
+    "category": "Transportation",
     "amount": 100000.0,
-    "notes": ""
+    "notes": "",
+    "month": "2026-04"
   }
 ]

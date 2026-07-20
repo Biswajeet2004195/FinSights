@@ -10,24 +10,27 @@ class BudgetMixin(BaseDashboard):
         pg = self._scrollable(self._cf)
         self._sec(pg, "📊 Monthly Budget Tracker", "Set limits and monitor spending per category")
 
-        trans = _ld("transactions"); cm = curr_m()
-        budgets = _ldd("budgets")
+        cm = curr_m()
+        trans = _ld("transactions")
+        budgets = get_budgets_for_month(cm)
         
-        # Initialize default categories if budget data is empty
-        if not budgets:
+        # Initialize default categories if budget data is completely empty across all months
+        if not budgets and cm == curr_m() and not get_all_budgets():
             budgets = {
-                "Food": 5000.0,
-                "Transportation": 3000.0,
-                "Shopping": 4000.0,
-                "Bills & Utilities": 6000.0,
-                "Entertainment": 2000.0,
-                "Healthcare": 3000.0,
-                "Education": 5000.0,
-                "Travel": 3000.0,
-                "Savings": 10000.0,
-                "Miscellaneous": 2000.0
+                "Food": {"amount": 5000.0, "currency": "INR"},
+                "Transportation": {"amount": 3000.0, "currency": "INR"},
+                "Shopping": {"amount": 4000.0, "currency": "INR"},
+                "Bills & Utilities": {"amount": 6000.0, "currency": "INR"},
+                "Entertainment": {"amount": 2000.0, "currency": "INR"},
+                "Healthcare": {"amount": 3000.0, "currency": "INR"},
+                "Education": {"amount": 5000.0, "currency": "INR"},
+                "Travel": {"amount": 3000.0, "currency": "INR"},
+                "Savings": {"amount": 10000.0, "currency": "INR"},
+                "Miscellaneous": {"amount": 2000.0, "currency": "INR"}
             }
-            _sv("budgets", budgets)
+            for k, v in budgets.items():
+                save_budget_for_month(cm, k, v["amount"], v["currency"])
+
         dc = GLOBAL_STATE["display_currency"]
         spent_by = defaultdict(float)
         for r in trans:
@@ -38,7 +41,6 @@ class BudgetMixin(BaseDashboard):
         total_budget = 0.0
         for c in cats:
             b_val = budgets.get(c, {"amount": 0.0, "currency": "INR"})
-            if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
             total_budget += convert_currency(b_val["amount"], b_val["currency"], dc)
             
         total_spent  = sum(spent_by.get(c, 0) for c in cats)
@@ -54,13 +56,9 @@ class BudgetMixin(BaseDashboard):
                 curr = vals.get("currency", "INR")
                 if not name:
                     return messagebox.showwarning("Error", "Category name cannot be empty.")
-                try:
-                    val = float(amt)
-                except ValueError:
-                    return messagebox.showwarning("Error", "Please enter a valid amount.")
-                bdgts = _ldd("budgets")
-                bdgts[name] = {"amount": val, "currency": curr}
-                _sv("budgets", bdgts)
+                try: val = float(amt)
+                except ValueError: return messagebox.showwarning("Error", "Please enter a valid amount.")
+                save_budget_for_month(cm, name, val, curr)
                 dlg.destroy()
                 self.show_budget()
                 
@@ -71,6 +69,21 @@ class BudgetMixin(BaseDashboard):
             ], _save, defaults={"currency": GLOBAL_STATE["display_currency"]})
             
         self._tb_btn(tb, "＋ Add Category", _add_cat, AC)
+        
+        if not budgets:
+            def _copy_prev():
+                y, m = map(int, cm.split("-"))
+                m -= 1
+                if m < 1: y -= 1; m = 12
+                pm = f"{y:04d}-{m:02d}"
+                pb = get_budgets_for_month(pm)
+                if not pb: return messagebox.showinfo("Info", "No budget found in the previous month.")
+                for k, v in pb.items():
+                    save_budget_for_month(cm, k, v["amount"], v["currency"])
+                self.show_budget()
+            self._tb_btn(tb, "📋 Copy Previous Month Budget", _copy_prev, CB2)
+            tk.Label(pg, text="No budget exists for this month.", font=("Segoe UI", 11), bg=BG, fg=TS).pack(pady=40)
+            return
 
         # Summary row
         srow = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); srow.pack(fill="x", padx=20, pady=(0, 14))
@@ -85,8 +98,6 @@ class BudgetMixin(BaseDashboard):
             rw = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); rw.pack(fill="x", padx=20, pady=5)
             for cat in pair:
                 b_val = budgets.get(cat, {"amount": 0.0, "currency": "INR"})
-                if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
-                
                 bgt_orig_amt = b_val["amount"]
                 bgt_orig_curr = b_val["currency"]
                 bgt = convert_currency(bgt_orig_amt, bgt_orig_curr, dc)
@@ -111,13 +122,9 @@ class BudgetMixin(BaseDashboard):
                 # Edit & Delete Buttons
                 def _eb(c=cat, b_amt=bgt_orig_amt, b_curr=bgt_orig_curr):
                     def _save_bgt(vals, dlg):
-                        try:
-                            val = float(vals.get("amount", "0"))
-                        except ValueError:
-                            return messagebox.showwarning("Error", "Invalid amount")
-                        bdgts = _ldd("budgets")
-                        bdgts[c] = {"amount": val, "currency": vals.get("currency", "INR")}
-                        _sv("budgets", bdgts)
+                        try: val = float(vals.get("amount", "0"))
+                        except ValueError: return messagebox.showwarning("Error", "Invalid amount")
+                        save_budget_for_month(cm, c, val, vals.get("currency", "INR"))
                         dlg.destroy()
                         self.show_budget()
                         
@@ -128,10 +135,7 @@ class BudgetMixin(BaseDashboard):
                        
                 def _db(c=cat):
                     if messagebox.askyesno("Confirm", f"Delete the budget category '{c}'?"):
-                        bdgts = _ldd("budgets")
-                        if c in bdgts:
-                            del bdgts[c]
-                        _sv("budgets", bdgts)
+                        delete_budget_for_month(cm, c)
                         self.show_budget()
 
                 btns = ctk.CTkFrame(hr, fg_color=CB, corner_radius=10)

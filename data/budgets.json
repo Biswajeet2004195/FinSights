@@ -1,12 +1,422 @@
-{
-  "Food": 5000.0,
-  "Transportation": 3000.0,
-  "Shopping": 4000.0,
-  "Bills & Utilities": 6000.0,
-  "Entertainment": 2000.0,
-  "Healthcare": 3000.0,
-  "Education": 5000.0,
-  "Travel": 3000.0,
-  "Savings": 10000.0,
-  "Miscellaneous": 2000.0
-}
+[
+  {
+    "month": "2026-07",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-08",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-06",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-05",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-04",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-03",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-02",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  }
+]

@@ -57,7 +57,7 @@ class ReportMixin(BaseDashboard):
         tf, tv = self._tv(pg, cols, [200, 120, 140, 140, 120], height=10)
         tf.pack(fill="x", padx=20, pady=(0, 12))
         
-        budgets = _ldd("budgets")
+        budgets = get_budgets_for_month(curr_m())
         cats = list(budgets.keys())
         cat_data = defaultdict(lambda: {"count": 0, "total": 0.0})
         for r in trans:
@@ -134,7 +134,7 @@ class ReportMixin(BaseDashboard):
                 
         return {
             "trans": filtered_trans,
-            "budgets": _ldd("budgets") if self.inc_bgt_var.get() else {},
+            "budgets": get_budgets_for_month(curr_m()) if self.inc_bgt_var.get() else {},
             "invs": _ld("investments") if self.inc_inv_var.get() else [],
             "goals": _ld("goals") if self.inc_gol_var.get() else [],
             "start": sd.strftime("%Y-%m-%d"),

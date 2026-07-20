@@ -26,12 +26,12 @@ class ExpenseMixin(BaseDashboard):
             self._dialog("Add Expense", [
                 {"k": "date",     "lbl": "Date (YYYY-MM-DD)", "type": "entry"},
                 {"k": "desc",     "lbl": "Description",       "type": "entry"},
-                {"k": "category", "lbl": "Category",          "type": "combo", "opts": list(_ldd("budgets").keys())},
+                {"k": "category", "lbl": "Category",          "type": "combo", "opts": sorted(list({b.get("category") for b in get_all_budgets() if b.get("category")}))},
                 {"k": "currency", "lbl": "Currency",          "type": "combo", "opts": SUPPORTED_CURRENCIES},
                 {"k": "amount",   "lbl": "Amount",            "type": "entry"},
                 {"k": "notes",    "lbl": "Notes",             "type": "entry"},
             ], lambda vals, dlg: self._save_trans(vals, "expense", dlg, self.show_expenses),
-               defaults={"date": today(), "currency": GLOBAL_STATE["display_currency"]})
+               defaults={"date": default_date(), "currency": GLOBAL_STATE["display_currency"]})
 
         def _edit():
             sel = tv.selection()
@@ -41,7 +41,7 @@ class ExpenseMixin(BaseDashboard):
             self._dialog("Edit Expense", [
                 {"k": "date",     "lbl": "Date (YYYY-MM-DD)", "type": "entry"},
                 {"k": "desc",     "lbl": "Description",       "type": "entry"},
-                {"k": "category", "lbl": "Category",          "type": "combo", "opts": list(_ldd("budgets").keys())},
+                {"k": "category", "lbl": "Category",          "type": "combo", "opts": sorted(list({b.get("category") for b in get_all_budgets() if b.get("category")}))},
                 {"k": "currency", "lbl": "Currency",          "type": "combo", "opts": SUPPORTED_CURRENCIES},
                 {"k": "amount",   "lbl": "Amount",            "type": "entry"},
                 {"k": "notes",    "lbl": "Notes",             "type": "entry"},

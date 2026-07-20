@@ -191,7 +191,7 @@ class ProfileMixin(BaseDashboard):
             
             # Clear global data mimicking user specific data deletion
             _sv("transactions", [])
-            _sv("budgets", {})
+            _sv("budgets", [])
             _sv("goals", [])
             _sv("investments", [])
             _sv("notifications", [])
