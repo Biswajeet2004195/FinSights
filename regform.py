@@ -186,6 +186,7 @@ def redraw_left_panel(w, h):
 
 # Resize callback to scale layouts dynamically
 last_w, last_h = 0, 0
+active_parent = None
 def on_resize(event):
     global last_w, last_h
     if event.widget != root:

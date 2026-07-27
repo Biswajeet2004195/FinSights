@@ -627,6 +627,7 @@ class BaseDashboard:
                      "month": dt[:7],
                      "desc": vals["desc"],
                      "category": vals.get("category", ""),
+                     "currency": vals.get("currency", GLOBAL_STATE.get("display_currency", "INR")),
                      "amount": amt,
                      "notes": vals.get("notes", "")})
         _sv("transactions", recs); dlg.destroy()
@@ -640,7 +641,9 @@ class BaseDashboard:
             if r["id"] == iid:
                 dt = vals["date"]
                 r.update({"date": dt, "month": dt[:7], "desc": vals["desc"],
-                           "category": vals["category"], "amount": amt,
+                           "category": vals["category"],
+                           "currency": vals.get("currency", r.get("currency", GLOBAL_STATE.get("display_currency", "INR"))),
+                           "amount": amt,
                            "notes": vals.get("notes", "")})
         _sv("transactions", recs); dlg.destroy(); refresh()
 
@@ -655,6 +658,7 @@ class BaseDashboard:
         invs = _ld("investments")
         invs.append({"id": mk_id(), "name": vals["name"],
                      "symbol": vals["symbol"], "type": vals["type"],
+                     "currency": vals.get("currency", GLOBAL_STATE.get("display_currency", "INR")),
                      "qty": qty, "buy_price": bp, "current_price": cp,
                      "notes": vals.get("notes", "")})
         _sv("investments", invs); dlg.destroy(); self.show_investments()
@@ -669,7 +673,9 @@ class BaseDashboard:
         for i in invs:
             if i["id"] == iid:
                 i.update({"name": vals["name"], "symbol": vals["symbol"],
-                           "type": vals["type"], "qty": qty,
+                           "type": vals["type"],
+                           "currency": vals.get("currency", i.get("currency", GLOBAL_STATE.get("display_currency", "INR"))),
+                           "qty": qty,
                            "buy_price": bp, "current_price": cp,
                            "notes": vals.get("notes", "")})
         _sv("investments", invs); dlg.destroy(); self.show_investments()
@@ -687,6 +693,7 @@ class BaseDashboard:
             return messagebox.showerror("Error", "Goal name is required.")
         goals = _ld("goals")
         goals.append({"id": mk_id(), "name": vals["name"],
+                      "currency": vals.get("currency", GLOBAL_STATE.get("display_currency", "INR")),
                       "target": tgt, "saved": saved,
                       "deadline": vals.get("deadline", "")})
         _sv("goals", goals); dlg.destroy(); self.show_goals()
@@ -698,6 +705,7 @@ class BaseDashboard:
         for g in goals:
             if g["id"] == gid:
                 g.update({"name": vals["name"],
+                           "currency": vals.get("currency", g.get("currency", GLOBAL_STATE.get("display_currency", "INR"))),
                            "target": tgt, "saved": saved,
                            "deadline": vals.get("deadline", "")})
         _sv("goals", goals); dlg.destroy(); self.show_goals()
@@ -934,11 +942,12 @@ class BaseDashboard:
         max_val = max(max(d[1], d[2]) for d in data) or 1
         n = len(data); slot_w = cw // n; bar_w = max(12, slot_w // 3)
 
+        dc_sym = get_currency_symbol(GLOBAL_STATE.get("display_currency", "INR"))
         for i in range(5):
             y = pad_t + int(ch * (1 - i / 4))
             canvas.create_line(pad_l, y, W - pad_r, y, fill=CB2, dash=(4, 4))
             val = int(max_val * i / 4)
-            lbl = f"₹{val//1000}k" if val >= 1000 else f"₹{val}"
+            lbl = f"{dc_sym}{val//1000}k" if val >= 1000 else f"{dc_sym}{val}"
             canvas.create_text(pad_l - 4, y, text=lbl, font=("Segoe UI", 7), fill=TH, anchor="e")
 
         for i, (label, income, expense) in enumerate(data):

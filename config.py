@@ -23,7 +23,7 @@ __all__ = [
     'BG', 'SB', 'CB', 'CB2', 'BD', 'AC', 'CY', 'GO', 'GR', 'RE', 'OR', 'PK', 'BL', 'PR', 'TP', 'TS', 'TH', 'EN',
     'SIDE_W', 'HEAD_H', 'WIN_W', 'WIN_H',
     'EXPENSE_CATS', 'INCOME_CATS', 'INV_TYPES', 'CAT_CLR',
-    'fmt_inr', 'fmt_amt', 'fmt_disp', 'GLOBAL_STATE', 'SUPPORTED_CURRENCIES', 'convert_currency',
+    'fmt_inr', 'fmt_amt', 'fmt_disp', 'GLOBAL_STATE', 'SUPPORTED_CURRENCIES', 'convert_currency', 'get_currency_symbol',
     'mk_id', 'today', 'curr_m', 'now_ts',
     'get_all_budgets', 'get_budgets_for_month', 'save_budget_for_month', 'delete_budget_for_month',
     '_ld_users', '_sv_users', 'fade_color',
@@ -109,7 +109,7 @@ CAT_CLR = {
     "Investment Returns": PR, "Rental": PK,      "Other": TS,
 }
 
-from currency_utils import format_amount, convert_currency, SUPPORTED_CURRENCIES
+from currency_utils import format_amount, convert_currency, SUPPORTED_CURRENCIES, get_currency_symbol
 
 from datetime import datetime
 GLOBAL_STATE = {
