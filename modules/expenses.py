@@ -59,6 +59,12 @@ class ExpenseMixin(BaseDashboard):
         self._tb_btn(tb, "＋  Add Expense", _add, AC)
         self._tb_btn(tb, "✏  Edit",        _edit, CB2)
         self._tb_btn(tb, "🗑  Delete",     _del,  CB2)
+        
+        # Filter
+        tk.Label(tb, text="Filter:", bg=BG, fg=TS, font=("Segoe UI", 10)).pack(side="left", padx=(20, 5))
+        f_var = tk.StringVar()
+        f_ent = tk.Entry(tb, textvariable=f_var, bg=CB2, fg=TP, insertbackground=CY, bd=0, font=("Segoe UI", 10))
+        f_ent.pack(side="left", padx=5, ipady=4)
 
         # Content Frame
         split = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); split.pack(fill="both", expand=True, padx=20, pady=(0, 16))
@@ -69,5 +75,14 @@ class ExpenseMixin(BaseDashboard):
         tf.pack(side="top", fill="both", expand=True)
         recs = sorted([r for r in trans if r["type"] == "expense"],
                       key=lambda r: r["date"], reverse=True)
-        self._tv_fill(tv, [(r["id"], r["date"], r["desc"], r["category"],
-                            fmt_amt(r["amount"], r.get("currency", "INR")), r.get("notes", "")) for r in recs])
+                      
+        def _apply_filter(*args):
+            q = f_var.get().lower()
+            filtered = []
+            for r in recs:
+                if q in r["date"].lower() or q in r["desc"].lower() or q in r["category"].lower() or q in str(r["amount"]).lower():
+                    filtered.append((r["id"], r["date"], r["desc"], r["category"], fmt_amt(r["amount"], r.get("currency", "INR")), r.get("notes", "")))
+            self._tv_fill(tv, filtered)
+            
+        f_var.trace("w", _apply_filter)
+        _apply_filter()

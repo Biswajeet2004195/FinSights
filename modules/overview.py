@@ -29,16 +29,20 @@ class OverviewMixin(BaseDashboard):
         mi = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "income"  and r["date"].startswith(cm))
         me = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in trans if r["type"] == "expense" and r["date"].startswith(cm))
         ms = mi - me
-        invs = _ld("investments")
-        pv = sum(convert_currency(i["qty"] * i["current_price"], i.get("currency", "INR"), dc) for i in invs)
+        
+        # Calculate Net Worth
+        records = _ld("net_worth")
+        assets = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in records if r["type"] == "Asset")
+        liabs = sum(convert_currency(r["amount"], r.get("currency", "INR"), dc) for r in records if r["type"] == "Liability")
+        nw = assets - liabs
 
         krow = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10)
         krow.pack(fill="x", padx=20, pady=(0, 10))
         for title, val, sub, clr, ico, cmd in [
+            ("Net Worth",       fmt_disp(nw), "Assets - Liabilities", CY, "💎", getattr(self, "show_net_worth", None)),
             ("Total Income",    fmt_disp(mi), "This month", GR, "💰", self.show_income),
             ("Total Expenses",  fmt_disp(me), "This month", RE, "💸", self.show_expenses),
-            ("Net Savings",     fmt_disp(ms), "This month", CY, "💎", self.show_budget),
-            ("Portfolio Value", fmt_disp(pv), "All investments", GO, "📈", self.show_investments),
+            ("Net Savings",     fmt_disp(ms), "This month", BL, "🏦", getattr(self, "show_forecast", None)),
         ]:
             k = self._kpi(krow, title, val, sub, color=clr, icon=ico, cmd=cmd)
             k.pack(side="left", fill="both", expand=True, padx=(0, 10), ipady=4)
@@ -56,9 +60,9 @@ class OverviewMixin(BaseDashboard):
             ("💸", "Expenses",     "Log and categorise your spending",  RE,  self.show_expenses),
             ("📊", "Budget",       "Set & monitor spending limits",     CY,  self.show_budget),
             ("📈", "Investments",  "Track your portfolio & P&L",        GO,  self.show_investments),
-            ("🎯", "Goals",        "Plan and reach savings goals",      AC,  self.show_goals),
-            ("🤖", "AI Insights",  "Smart spending analysis",           PR,  self.show_insights),
-            ("❤️", "Health Score", "Your financial wellness rating",    PK,  self.show_health),
+            ("💎", "Net Worth",    "Track assets and liabilities",      CY,  getattr(self, "show_net_worth", None)),
+            ("🔮", "Forecast",     "AI driven financial predictions",   BL,  getattr(self, "show_forecast", None)),
+            ("🔁", "Recurring",    "Automate fixed transactions",       PR,  getattr(self, "show_recurring", None)),
             ("📋", "Reports",      "View trends & export to CSV",       OR,  self.show_reports),
         ]
         for i in range(0, len(quick_items), 4):

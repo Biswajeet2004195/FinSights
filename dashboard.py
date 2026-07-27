@@ -29,6 +29,11 @@ from modules.notifications import NotificationMixin
 from modules.reports import ReportMixin
 from modules.admin import AdminMixin
 from modules.profile import ProfileMixin
+from modules.forecast import ForecastMixin
+from modules.net_worth import NetWorthMixin
+from modules.recurring import RecurringMixin
+from modules.settings import SettingsMixin
+from modules.backup import BackupMixin
 
 # ═══════════════════════════════════════════════════════════════════════════════
 class FinsightsDashboard(
@@ -45,6 +50,11 @@ class FinsightsDashboard(
     ReportMixin,
     AdminMixin,
     ProfileMixin,
+    ForecastMixin,
+    NetWorthMixin,
+    RecurringMixin,
+    SettingsMixin,
+    BackupMixin,
     BaseDashboard
 ):
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -67,6 +77,7 @@ class FinsightsDashboard(
         self._right_panel.pack(side="right", fill="both", expand=True)
         self._build_header()
         self._build_content()
+        self.process_recurring_transactions()
         self.show_overview()
 
 # ═══════════════════════════════════════════════════════════════════════════════

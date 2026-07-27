@@ -101,17 +101,20 @@ class ReportMixin(BaseDashboard):
         self.inc_bgt_var = tk.BooleanVar(value=True)
         self.inc_inv_var = tk.BooleanVar(value=True)
         self.inc_gol_var = tk.BooleanVar(value=True)
+        self.inc_nw_var = tk.BooleanVar(value=True)
         
         ctk.CTkCheckBox(chk_f, text="Transactions", variable=self.inc_exp_var, text_color=TP, fg_color=GR, hover_color=AC).pack(side="left", padx=(0, 10))
         ctk.CTkCheckBox(chk_f, text="Budgets", variable=self.inc_bgt_var, text_color=TP, fg_color=GR, hover_color=AC).pack(side="left", padx=10)
         ctk.CTkCheckBox(chk_f, text="Investments", variable=self.inc_inv_var, text_color=TP, fg_color=GR, hover_color=AC).pack(side="left", padx=10)
         ctk.CTkCheckBox(chk_f, text="Goals", variable=self.inc_gol_var, text_color=TP, fg_color=GR, hover_color=AC).pack(side="left", padx=10)
+        ctk.CTkCheckBox(chk_f, text="Net Worth", variable=self.inc_nw_var, text_color=TP, fg_color=GR, hover_color=AC).pack(side="left", padx=10)
         
         # Export Actions
         ew = ctk.CTkFrame(pg, fg_color=BG, corner_radius=10); ew.pack(fill="x", padx=20, pady=(4, 20))
         self._tb_btn(ew, "⬇  Export PDF Report", self._export_pdf_report, GR)
         self._tb_btn(ew, "📊  Export Excel Report", self._export_excel_report, CY)
         self._tb_btn(ew, "📁  Export CSV", self._export_all, CB2)
+        self._tb_btn(ew, "📝  Export JSON", self._export_json_report, GO)
 
     def _get_filtered_data(self):
         try:
@@ -137,9 +140,19 @@ class ReportMixin(BaseDashboard):
             "budgets": get_budgets_for_month(curr_m()) if self.inc_bgt_var.get() else {},
             "invs": _ld("investments") if self.inc_inv_var.get() else [],
             "goals": _ld("goals") if self.inc_gol_var.get() else [],
+            "net_worth": _ld("net_worth") if getattr(self, "inc_nw_var", None) and self.inc_nw_var.get() else [],
             "start": sd.strftime("%Y-%m-%d"),
             "end": ed.strftime("%Y-%m-%d")
         }
+        
+    def _export_json_report(self):
+        data = self._get_filtered_data()
+        if not data: return
+        fn = os.path.join(self._get_exports_path(), f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        import json
+        with open(fn, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+        messagebox.showinfo("✅ Exported", f"JSON report saved to:\n{fn}")
 
     def _get_exports_path(self):
         export_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports")

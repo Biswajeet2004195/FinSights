@@ -28,7 +28,8 @@ __all__ = [
     'get_all_budgets', 'get_budgets_for_month', 'save_budget_for_month', 'delete_budget_for_month',
     '_ld_users', '_sv_users', 'fade_color',
     'ctk', 'CR_CARD', 'CR_BTN', 'CR_ENT',
-    'hash_password', 'verify_password'
+    'hash_password', 'verify_password',
+    'BASE_DIR', 'DATA_DIR', '_DATA_CACHE', 'default_date'
 ]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -53,25 +54,36 @@ def _sv_users(u):
 
 def _p(n):    return os.path.join(DATA_DIR, f"{n}.json")
 
+_DATA_CACHE = {}
+
 def _ld(n):
+    if n in _DATA_CACHE:
+        return _DATA_CACHE[n]
     if os.path.exists(_p(n)):
         try:
             with open(_p(n), "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                _DATA_CACHE[n] = data
+                return data
         except Exception:
             pass
     return []
 
 def _ldd(n):
+    if n in _DATA_CACHE:
+        return _DATA_CACHE[n]
     if os.path.exists(_p(n)):
         try:
             with open(_p(n), "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                _DATA_CACHE[n] = data
+                return data
         except Exception:
             pass
     return {}
 
 def _sv(n, d):
+    _DATA_CACHE[n] = d
     with open(_p(n), "w", encoding="utf-8") as f:
         json.dump(d, f, indent=2)
 
@@ -188,16 +200,13 @@ def delete_budget_for_month(month, category):
 
 def _seed():
     """Create empty data stores on first run. No pre-loaded values."""
-    if not os.path.exists(_p("transactions")):
-        _sv("transactions", [])
-    if not os.path.exists(_p("budgets")):
-        _sv("budgets", [])
-    if not os.path.exists(_p("investments")):
-        _sv("investments", [])
-    if not os.path.exists(_p("goals")):
-        _sv("goals", [])
-    if not os.path.exists(_p("notifications")):
-        _sv("notifications", [])
+    files_to_seed = ["transactions", "budgets", "investments", "goals", "notifications", "net_worth", "recurring", "settings"]
+    for f in files_to_seed:
+        if not os.path.exists(_p(f)):
+            if f == "settings":
+                _sv(f, {})
+            else:
+                _sv(f, [])
 
 def _migrate_transactions():
     """Add 'month' field to any transaction missing it."""

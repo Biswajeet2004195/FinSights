@@ -29,6 +29,12 @@ class InsightMixin(BaseDashboard):
             ri = ctk.CTkFrame(rw, fg_color=ins["bg"], corner_radius=10); ri.pack(side="left", fill="both", expand=True)
             tk.Label(ri, text=ins["title"], font=("Segoe UI Semibold", 11),
                      bg=ins["bg"], fg=TP).pack(anchor="w")
+                     
+            if "priority" in ins:
+                badge_bg = RE if ins["priority"] == "Critical" else (GO if ins["priority"] == "Warning" else (CY if ins["priority"] == "Positive" else TS))
+                badge = tk.Label(ri, text=f" {ins['priority']} ", font=("Segoe UI", 8, "bold"), bg=badge_bg, fg=BG)
+                badge.pack(anchor="w", pady=(2, 2))
+                
             tk.Label(ri, text=ins["msg"], font=("Segoe UI Light", 10),
                      bg=ins["bg"], fg=TS, wraplength=860, justify="left").pack(anchor="w", pady=(2, 0))
             if ins.get("tip"):

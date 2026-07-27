@@ -72,26 +72,29 @@ class BaseDashboard:
             ("🏠", "Overview",      self.show_overview),
             ("💰", "Income",        self.show_income),
             ("💸", "Expenses",      self.show_expenses),
-            ("📈", "Analytics",     self.show_analytics),
+            ("💎", "Net Worth",     getattr(self, "show_net_worth", None)),
+            ("🔮", "Forecast",      getattr(self, "show_forecast", None)),
+            ("🔁", "Recurring",     getattr(self, "show_recurring", None)),
             ("📊", "Budget",        self.show_budget),
             ("📈", "Investments",   self.show_investments),
             ("🎯", "Goals",         self.show_goals),
             ("🤖", "AI Insights",   self.show_insights),
-            ("❤️", "Health Score",  self.show_health),
             ("📋", "Reports",       self.show_reports),
             ("🔔", "Notifications", self.show_notifications),
+            ("⚙️", "Settings",      getattr(self, "show_settings", None)),
+            ("💾", "Backup",        getattr(self, "show_backup", None)),
             ("👤", "Profile",       self.show_profile),
         ]
 
             
         self._nav_hl = []
         for i, (icon, label, cmd) in enumerate(self._nav_data):
-            y = 96 + i * 50
-            hl  = sc.create_rectangle(0, y, SIDE_W, y + 44, fill=CB2, outline="", state="hidden")
-            bar = sc.create_rectangle(0, y, 3, y + 44, fill=CY, outline="", state="hidden")
-            ico = sc.create_text(30, y + 22, text=icon, font=("Segoe UI Emoji", 14), fill=TP, anchor="center")
-            lbl = sc.create_text(58, y + 22, text=label, font=("Segoe UI", 11), fill=TS, anchor="w")
-            area = sc.create_rectangle(0, y, SIDE_W, y + 44, fill="", outline="", tags=f"nv{i}")
+            y = 80 + i * 36
+            hl  = sc.create_rectangle(0, y, SIDE_W, y + 32, fill=CB2, outline="", state="hidden")
+            bar = sc.create_rectangle(0, y, 3, y + 32, fill=CY, outline="", state="hidden")
+            ico = sc.create_text(30, y + 16, text=icon, font=("Segoe UI Emoji", 13), fill=TP, anchor="center")
+            lbl = sc.create_text(58, y + 16, text=label, font=("Segoe UI", 10), fill=TS, anchor="w")
+            area = sc.create_rectangle(0, y, SIDE_W, y + 32, fill="", outline="", tags=f"nv{i}")
             self._nav_hl.append((hl, bar, ico, lbl))
             sc.tag_bind(f"nv{i}", "<Button-1>", lambda e, c=cmd: c())
             sc.tag_bind(f"nv{i}", "<Enter>",
@@ -171,6 +174,29 @@ class BaseDashboard:
             font=("Segoe UI", 18, "bold"), fill=TP, anchor="w"
         )
         
+        # Smart Search
+        search_f = tk.Frame(hc, bg=EN, bd=0)
+        self.search_var = tk.StringVar()
+        self.search_entry = tk.Entry(search_f, textvariable=self.search_var, bg=EN, fg=TP, font=("Segoe UI", 10), insertbackground=CY, relief="flat", bd=0, width=20)
+        self.search_entry.pack(side="left", fill="both", expand=True, padx=(10, 5), pady=4)
+        self.search_entry.insert(0, "Search...")
+        
+        def _on_focus_in(e):
+            if self.search_entry.get() == "Search...":
+                self.search_entry.delete(0, "end")
+        def _on_focus_out(e):
+            if not self.search_entry.get():
+                self.search_entry.insert(0, "Search...")
+        def _on_search(e):
+            q = self.search_var.get().lower().strip()
+            if q and q != "search...":
+                self._show_search_results(q)
+                
+        self.search_entry.bind("<FocusIn>", _on_focus_in)
+        self.search_entry.bind("<FocusOut>", _on_focus_out)
+        self.search_entry.bind("<Return>", _on_search)
+        self._search_window = hc.create_window(0, HEAD_H // 2, window=search_f, anchor="center", tags="search_bar")
+
         # Currency Selector
         self.currency_var = tk.StringVar(value=GLOBAL_STATE.get("display_currency", "INR"))
         self.curr_cb = ttk.Combobox(hc, textvariable=self.currency_var, values=SUPPORTED_CURRENCIES, 
@@ -210,7 +236,8 @@ class BaseDashboard:
             hc.delete("border")
             hc.create_line(0, HEAD_H - 1, w, HEAD_H - 1, fill=BD, width=1, tags="border")
             
-            hc.coords("curr_cb", w - 480, HEAD_H // 2)
+            hc.coords("search_bar", w - 620, HEAD_H // 2)
+            hc.coords("curr_cb", w - 460, HEAD_H // 2)
             hc.coords("month_sel", w - 320, HEAD_H // 2)
             hc.coords("date", w - 160, HEAD_H // 2)
             hc.coords("bell", w - 40, HEAD_H // 2)
@@ -287,6 +314,59 @@ class BaseDashboard:
             hc.create_oval(bx, by, bx + 16, by + 16, fill=RE, outline="", tags="nbadge")
             hc.create_text(bx + 8, by + 8, text=str(unread),
                            font=("Segoe UI", 7, "bold"), fill=TP, tags="nbadge")
+
+    def _show_search_results(self, query):
+        dlg = tk.Toplevel(self.root)
+        dlg.title(f"Search Results: '{query}'")
+        dlg.geometry("700x500")
+        dlg.configure(bg=BG)
+        dlg.transient(self.root)
+        dlg.grab_set()
+        
+        tk.Label(dlg, text=f"Search Results for '{query}'", font=("Segoe UI", 16, "bold"), bg=BG, fg=TP).pack(pady=(15, 5))
+        
+        f = tk.Frame(dlg, bg=CB)
+        f.pack(fill="both", expand=True, padx=20, pady=15)
+        
+        tv = ttk.Treeview(f, columns=("Type", "Name/Desc", "Date/Detail", "Amount"), show="headings", style="D.Treeview", height=15)
+        tv.heading("Type", text="Type"); tv.column("Type", width=100, anchor="w")
+        tv.heading("Name/Desc", text="Name/Desc"); tv.column("Name/Desc", width=250, anchor="w")
+        tv.heading("Date/Detail", text="Date/Detail"); tv.column("Date/Detail", width=150, anchor="w")
+        tv.heading("Amount", text="Amount"); tv.column("Amount", width=100, anchor="w")
+        
+        sb = ttk.Scrollbar(f, orient="vertical", command=tv.yview)
+        tv.configure(yscrollcommand=sb.set)
+        tv.pack(side="left", fill="both", expand=True)
+        sb.pack(side="right", fill="y")
+        
+        results = []
+        # Search transactions
+        for t in _ld("transactions"):
+            if query in t.get("desc", "").lower() or query in t.get("category", "").lower():
+                results.append(("Transaction", t.get("desc", ""), t.get("date", ""), fmt_amt(t.get("amount", 0), t.get("currency", "INR"))))
+        
+        # Search Budgets
+        for b in get_all_budgets():
+            if query in b.get("category", "").lower():
+                results.append(("Budget", b.get("category", ""), b.get("month", ""), fmt_amt(b.get("amount", 0), b.get("currency", "INR"))))
+                
+        # Search Goals
+        for g in _ld("goals"):
+            if query in g.get("name", "").lower():
+                results.append(("Goal", g.get("name", ""), g.get("deadline", ""), fmt_disp(g.get("target", 0))))
+                
+        # Search Investments
+        for i in _ld("investments"):
+            if query in i.get("name", "").lower() or query in i.get("symbol", "").lower():
+                results.append(("Investment", i.get("name", ""), i.get("type", ""), fmt_amt(i.get("qty", 0) * i.get("buy_price", 0), i.get("currency", "INR"))))
+                
+        for idx, r in enumerate(results):
+            tv.insert("", "end", values=r, tags=("odd" if idx % 2 else "even",))
+            
+        tv.tag_configure("odd", background="#1d1d1f")
+        tv.tag_configure("even", background=CB)
+        
+        tk.Button(dlg, text="Close", font=("Segoe UI", 10), bg=BD, fg=TP, bd=0, cursor="hand2", command=dlg.destroy).pack(pady=(0, 15))
 
     def _set_title(self, t):
         self._hc.itemconfig(self._htitle, text=t)
@@ -701,17 +781,17 @@ class BaseDashboard:
                 insights.append({"icon": "✅", "title": "Great Savings Rate!",
                     "msg": f"You're saving {sr:.1f}% of your income this month — above the 20% target.",
                     "tip": "Keep it up! Invest your surplus in SIPs or index funds.",
-                    "bg": "#1c2c1c", "border": GR})
+                    "bg": "#1c2c1c", "border": GR, "priority": "Positive"})
             elif sr > 0:
                 insights.append({"icon": "⚠️", "title": "Savings Rate Needs Work",
                     "msg": f"Savings rate is {sr:.1f}% this month. Target is 20% ({fmt_disp(mi*0.2)}).",
                     "tip": "Try the 50/30/20 rule: 50% needs, 30% wants, 20% savings.",
-                    "bg": "#2c2a1c", "border": GO})
+                    "bg": "#2c2a1c", "border": GO, "priority": "Warning"})
             else:
                 insights.append({"icon": "🔴", "title": "Spending Exceeds Income!",
                     "msg": f"Spent {fmt_disp(me)} vs income of {fmt_disp(mi)} — deficit of {fmt_disp(me - mi)}.",
                     "tip": "Review discretionary spending and cut non-essentials immediately.",
-                    "bg": "#2c1c1c", "border": RE})
+                    "bg": "#2c1c1c", "border": RE, "priority": "Critical"})
                     
         # Expense Analysis
         spent_by = defaultdict(float)
@@ -737,7 +817,7 @@ class BaseDashboard:
             insights.append({"icon": "📊", "title": f"Top Expense: {top_cat}",
                 "msg": f"Highest spending: {top_cat} at {fmt_disp(top_amt)} ({pct_b:.0f}% of budget).",
                 "tip": f"Look for small ways to reduce {top_cat} spending next month.",
-                "bg": "#1c222c", "border": AC})
+                "bg": "#1c222c", "border": AC, "priority": "Normal"})
                 
         # Month-over-month spending increases
         for cat, amt in spent_by.items():
@@ -747,7 +827,7 @@ class BaseDashboard:
                     insights.append({"icon": "📈", "title": f"Spending Spike: {cat}",
                         "msg": f"{cat} spending increased by {pct_change:.1f}% compared to last month.",
                         "tip": f"Review your {cat.lower()} expenses to ensure this spike was planned.",
-                        "bg": "#2c1c1c", "border": OR})
+                        "bg": "#2c1c1c", "border": OR, "priority": "Warning"})
                         
         # Budget Alerts
         for cat, b_val in budgets.items():
@@ -758,7 +838,7 @@ class BaseDashboard:
                 insights.append({"icon": "⚠️", "title": f"Budget Alert: {cat}",
                     "msg": f"Used {int(pct*100)}% of {cat} budget. Spent {fmt_disp(spent)} of {fmt_disp(bgt)}.",
                     "tip": "Pause non-essential spending in this category for the rest of the month.",
-                    "bg": "#2c2a1c", "border": GO})
+                    "bg": "#2c2a1c", "border": GO, "priority": "Critical" if pct > 1.0 else "Warning"})
                     
         # Goals Progress
         for g in goals[:2]:
@@ -768,7 +848,7 @@ class BaseDashboard:
             insights.append({"icon": g.get("icon", "🎯"), "title": f"Goal: {g['name']}",
                 "msg": f"{g['name']} is {pct:.0f}% complete. {fmt_disp(saved)} of {fmt_disp(tgt)} saved.",
                 "tip": f"Need {fmt_disp(tgt-saved)} more by {g.get('deadline', 'target date')}.",
-                "bg": "#1c2c2c", "border": CY})
+                "bg": "#1c2c2c", "border": CY, "priority": "Positive"})
                 
         # Investments Analysis
         if invs:
@@ -787,7 +867,7 @@ class BaseDashboard:
                         insights.append({"icon": "⚖️", "title": "Portfolio Concentration",
                             "msg": f"Your portfolio is heavily concentrated in {a_type} ({conc:.0f}%).",
                             "tip": "Diversify your investments across different asset classes to reduce risk.",
-                            "bg": "#2c2a1c", "border": GO})
+                            "bg": "#2c2a1c", "border": GO, "priority": "Warning"})
                         break
                         
             # Performance
