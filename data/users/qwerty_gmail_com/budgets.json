@@ -1,0 +1,62 @@
+[
+  {
+    "month": "2026-07",
+    "category": "Food",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Transportation",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Shopping",
+    "amount": 4000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Bills & Utilities",
+    "amount": 6000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Entertainment",
+    "amount": 2000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Healthcare",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Education",
+    "amount": 5000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Travel",
+    "amount": 3000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Savings",
+    "amount": 10000.0,
+    "currency": "INR"
+  },
+  {
+    "month": "2026-07",
+    "category": "Miscellaneous",
+    "amount": 2000.0,
+    "currency": "INR"
+  }
+]

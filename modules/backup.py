@@ -50,12 +50,13 @@ class BackupMixin:
             return
             
         try:
+            user_dir = get_user_dir()
             with zipfile.ZipFile(save_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(DATA_DIR):
+                for root, dirs, files in os.walk(user_dir):
                     for file in files:
                         if file.endswith('.json'):
                             file_path = os.path.join(root, file)
-                            arcname = os.path.relpath(file_path, start=DATA_DIR)
+                            arcname = os.path.relpath(file_path, start=user_dir)
                             zipf.write(file_path, arcname)
             messagebox.showinfo("Backup Successful", f"Data successfully backed up to:\n{save_path}")
         except Exception as e:
@@ -83,10 +84,12 @@ class BackupMixin:
             with zipfile.ZipFile(open_path, 'r') as zipf:
                 zipf.extractall(temp_dir)
                 
-            # Move files to DATA_DIR
-            for file in os.listdir(temp_dir):
-                if file.endswith('.json'):
-                    shutil.move(os.path.join(temp_dir, file), os.path.join(DATA_DIR, file))
+            # Move files to active user directory
+            user_dir = get_user_dir()
+            for root, dirs, files in os.walk(temp_dir):
+                for file in files:
+                    if file.endswith('.json'):
+                        shutil.move(os.path.join(root, file), os.path.join(user_dir, file))
                     
             shutil.rmtree(temp_dir)
             

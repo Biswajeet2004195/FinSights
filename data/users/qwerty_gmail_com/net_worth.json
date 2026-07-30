@@ -1,0 +1,29 @@
+[
+  {
+    "id": "1785424449490835",
+    "type": "Asset",
+    "category": "Other Asset",
+    "desc": "Land Plot",
+    "amount": 9000000.0,
+    "date": "2025-10-23",
+    "currency": "INR"
+  },
+  {
+    "id": "1785424513180464",
+    "type": "Liability",
+    "category": "Credit Card",
+    "desc": "Mobile",
+    "amount": 150000.0,
+    "date": "2026-02-22",
+    "currency": "INR"
+  },
+  {
+    "id": "1785424568155753",
+    "type": "Liability",
+    "category": "Cash",
+    "desc": "Sharma Uncle",
+    "amount": 2500000.0,
+    "date": "2026-01-24",
+    "currency": "INR"
+  }
+]

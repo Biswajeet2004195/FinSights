@@ -1,0 +1,35 @@
+[
+  {
+    "id": "1785422896629470",
+    "type": "income",
+    "frequency": "Monthly",
+    "category": "Salary",
+    "desc": "Job",
+    "amount": 75000.0,
+    "currency": "INR",
+    "next_date": "2026-08-04",
+    "active": true
+  },
+  {
+    "id": "1785422967541190",
+    "type": "expense",
+    "frequency": "Monthly",
+    "category": "Entertainment",
+    "desc": "Netflix",
+    "amount": 400.0,
+    "currency": "INR",
+    "next_date": "2026-08-25",
+    "active": true
+  },
+  {
+    "id": "1785423233730139",
+    "type": "expense",
+    "frequency": "Monthly",
+    "category": "Rent/Housing",
+    "desc": "House rent",
+    "amount": 7500.0,
+    "currency": "INR",
+    "next_date": "2026-08-05",
+    "active": true
+  }
+]

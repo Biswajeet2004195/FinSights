@@ -1,3 +1,7 @@
+import os
+import sys
+import shutil
+import subprocess
 import tkinter as tk
 from tkinter import messagebox
 from config import *
@@ -52,8 +56,9 @@ class ProfileMixin(BaseDashboard):
         r_acts = ctk.CTkFrame(pci, fg_color=CB, corner_radius=10)
         r_acts.pack(fill="x", padx=20, pady=(0, 20))
         
-        self._tb_btn(r_acts, "➕ Add Account", self._add_account, AC).pack(side="left", padx=(0, 10))
-        self._tb_btn(r_acts, "✏ Edit Profile", self._edit_profile, AC).pack(side="left", padx=(0, 10))
+        self._tb_btn(r_acts, "🔄 Switch Account", self._switch_account, AC).pack(side="left", padx=(0, 10))
+        self._tb_btn(r_acts, "➕ Add Account", self._add_account, CB2).pack(side="left", padx=(0, 10))
+        self._tb_btn(r_acts, "✏ Edit Profile", self._edit_profile, CB2).pack(side="left", padx=(0, 10))
         self._tb_btn(r_acts, "🔑 Change Password", self._change_password, CY).pack(side="left", padx=(0, 10))
         self._tb_btn(r_acts, "🚪 Logout", self._logout, TS).pack(side="left", padx=(0, 10))
         
@@ -63,6 +68,45 @@ class ProfileMixin(BaseDashboard):
         
         # Bottom spacer
         ctk.CTkFrame(pg, fg_color=BG, height=20, corner_radius=10).pack()
+
+    def _switch_account(self):
+        users = _ld_users()
+        other_emails = [e for e in users.keys() if e.strip().lower() != self.email.strip().lower()]
+        
+        if not other_emails:
+            return messagebox.showinfo("Switch Account", "No other accounts found. Use 'Add Account' to create one first.")
+            
+        def save_cb(vals, dlg):
+            target_email = vals.get("email", "").strip().lower()
+            password = vals.get("password", "").strip()
+            
+            u = _ld_users()
+            matching_key = next((k for k in u.keys() if k.strip().lower() == target_email), None)
+            if not matching_key:
+                return messagebox.showerror("Error", "Account not found.")
+                
+            ud = u[matching_key]
+            if not verify_password(ud["password"], password):
+                return messagebox.showerror("Error", "Incorrect password.")
+                
+            self.email = matching_key
+            self.username = ud.get("name", matching_key)
+            set_current_user(matching_key)
+            
+            GLOBAL_STATE["display_currency"] = ud.get("display_currency", "INR")
+            if hasattr(self, "currency_var"):
+                self.currency_var.set(GLOBAL_STATE["display_currency"])
+                
+            dlg.destroy()
+            self._update_sidebar_name()
+            self.process_recurring_transactions()
+            self.show_overview()
+            messagebox.showinfo("Success", f"Switched account to {self.username}!")
+            
+        self._dialog("Switch Account", [
+            {"k": "email", "lbl": "Select Account", "type": "combo", "opts": other_emails},
+            {"k": "password", "lbl": "Password", "type": "entry", "show": "*"}
+        ], save_cb)
 
     def _add_account(self):
         def save_cb(vals, dlg):
@@ -90,6 +134,7 @@ class ProfileMixin(BaseDashboard):
                 "password": hash_password(password)
             }
             _sv_users(u)
+            init_user_data(email)
             messagebox.showinfo("Success", "New account created successfully.")
             dlg.destroy()
             self.show_profile()
@@ -122,16 +167,33 @@ class ProfileMixin(BaseDashboard):
             # Find actual key used
             old_key = next((k for k in u.keys() if k.strip().lower() == current_email_lower), self.email)
             
-            # Update data
+            # Update user store
             old_data = u.pop(old_key, {})
             if old_data:
                 old_data["name"] = new_name
                 u[new_email] = old_data
                 _sv_users(u)
             
+            # Update data directory if email key changed
+            if new_email != current_email_lower:
+                old_dir = get_user_dir(old_key)
+                new_dir = get_user_dir(new_email)
+                if os.path.exists(old_dir) and old_dir != new_dir:
+                    import shutil
+                    if os.path.exists(new_dir):
+                        try:
+                            shutil.rmtree(new_dir)
+                        except Exception:
+                            pass
+                    try:
+                        os.rename(old_dir, new_dir)
+                    except Exception:
+                        pass
+            
             # Update session
             self.email = new_email
             self.username = new_name
+            set_current_user(new_email)
             dlg.destroy()
             self.show_profile()
             self._update_sidebar_name()
@@ -183,19 +245,34 @@ class ProfileMixin(BaseDashboard):
     def _delete_account(self):
         msg = "Are you sure you want to permanently delete your account?\nThis action cannot be undone."
         if messagebox.askyesno("Delete Account", msg, icon="warning"):
-            # Delete user
+            # Delete user record
             u = _ld_users()
             if self.email in u:
                 del u[self.email]
                 _sv_users(u)
-            
-            # Clear global data mimicking user specific data deletion
-            _sv("transactions", [])
-            _sv("budgets", [])
-            _sv("goals", [])
-            _sv("investments", [])
-            _sv("notifications", [])
-            
+
+            # Delete user-specific data directory
+            user_dir = get_user_dir(self.email)
+            if os.path.exists(user_dir):
+                try:
+                    shutil.rmtree(user_dir)
+                except Exception:
+                    pass
+
+            _DATA_CACHE.clear()
+
             messagebox.showinfo("Account Deleted", "Your account and data have been permanently deleted.")
-            self.root.master.deiconify()
-            self.root.destroy()
+
+            # Relaunch regform.py in a new process, then shut down the entire app
+            regform_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "regform.py")
+            subprocess.Popen([sys.executable, regform_path])
+
+            # Destroy the whole application (dashboard Toplevel + regform root)
+            try:
+                self.root.master.destroy()
+            except Exception:
+                pass
+            try:
+                self.root.destroy()
+            except Exception:
+                pass

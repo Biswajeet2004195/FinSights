@@ -12,10 +12,8 @@ except:
     except:
         pass
 
+from config import *
 from dashboard import launch_dashboard
-from config import fade_color, _ld_users, _sv_users, hash_password, verify_password
-
-
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DIR  = r"D:/infosys"
@@ -31,21 +29,21 @@ def save(u):
     _sv_users(u)
 
 # ── Palette ────────────────────────────────────────────────────────────────────
-BG_DARK   = "#071510"   # obsidian dark green
-BG_LEFT   = "#0a1c15"   # dark forest green
-CARD_BG   = "#0f261f"   # dark emerald card panel
-CARD_BDR  = "#1c4437"   # Specular green border
-ACCENT    = "#10b981"   # neon emerald green
-ACCENT2   = "#00e676"   # neon bright green
-GOLD      = "#ff9f0a"   # orange/gold
-TXT_PRI   = "#ffffff"   # white
-TXT_SEC   = "#8ca39b"   # pale sage
-TXT_HINT  = "#5a6f66"   # muted sage
-ENTRY_BG  = "#050e0a"   # deep input background
-ENTRY_BDR = "#1c4437"   # green border
-BTN_HVR   = "#059669"   # emerald hover
-BTN2_BG   = "#15342a"   # secondary button
-BTN2_HVR  = "#1c4437"   # secondary hover
+BG_DARK   = BG
+BG_LEFT   = SB
+CARD_BG   = CB
+CARD_BDR  = BD
+ACCENT    = AC
+ACCENT2   = CY
+GOLD      = GO
+TXT_PRI   = TP
+TXT_SEC   = TS
+TXT_HINT  = TH
+ENTRY_BG  = EN
+ENTRY_BDR = BD
+BTN_HVR   = "#059669"
+BTN2_BG   = CB2
+BTN2_HVR  = BD
 
 # ── Window ─────────────────────────────────────────────────────────────────────
 WIN_W, WIN_H = 1100, 680
@@ -534,6 +532,11 @@ def login():
         if not is_valid:
             return messagebox.showerror("Login Failed", "Invalid email or password.")
             
+        # Clear cached data and set active user session
+        from config import set_current_user, GLOBAL_STATE
+        set_current_user(found_key)
+        GLOBAL_STATE["display_currency"] = user_data.get("display_currency", "INR")
+
         fade_out_window(root, lambda: launch_dashboard_with_fade(root, user_data["name"], found_key))
 
     make_btn_primary("  Sign In  →", go)
@@ -573,6 +576,7 @@ def signup():
             "password": hash_password(pass_val)
         }
         save(u)
+        init_user_data(email_val)
         messagebox.showinfo("🎉 Welcome!", f"Hello {name_val}, your account is ready!")
         transition_to_form(home)
 

@@ -1,0 +1,25 @@
+[
+  {
+    "id": "1785140075450384",
+    "type": "expense",
+    "frequency": "Monthly",
+    "category": "Rent/Housing",
+    "desc": "home loan",
+    "amount": 40000.0,
+    "currency": "INR",
+    "next_date": "2026-08-01",
+    "active": true
+  },
+  {
+    "id": "1785143133146549",
+    "type": "income",
+    "frequency": "Monthly",
+    "category": "Salary",
+    "desc": "job",
+    "amount": 75000.0,
+    "currency": "INR",
+    "next_date": "2026-08-15",
+    "active": true,
+    "status": "Active"
+  }
+]

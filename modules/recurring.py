@@ -185,6 +185,7 @@ class RecurringMixin:
                     "active": is_active
                 })
             _sv("recurring", recs)
+            self.process_recurring_transactions()
             dlg.destroy()
             self.show_recurring()
 

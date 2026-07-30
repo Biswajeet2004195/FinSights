@@ -32,12 +32,14 @@ from modules.profile import ProfileMixin
 from modules.forecast import ForecastMixin
 from modules.net_worth import NetWorthMixin
 from modules.recurring import RecurringMixin
+from modules.transactions import TransactionsMixin
 from modules.settings import SettingsMixin
 from modules.backup import BackupMixin
 
 # ═══════════════════════════════════════════════════════════════════════════════
 class FinsightsDashboard(
     OverviewMixin,
+    TransactionsMixin,
     IncomeMixin,
     ExpenseMixin,
     AnalyticsMixin,
@@ -63,6 +65,7 @@ class FinsightsDashboard(
         self.username = username
         self.email = email
         
+        set_current_user(email)
         users = _ld_users()
         user_prof = users.get(email, {})
         GLOBAL_STATE["display_currency"] = user_prof.get("display_currency", "INR")

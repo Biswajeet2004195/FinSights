@@ -81,7 +81,8 @@ class ExpenseMixin(BaseDashboard):
             filtered = []
             for r in recs:
                 if q in r["date"].lower() or q in r["desc"].lower() or q in r["category"].lower() or q in str(r["amount"]).lower():
-                    filtered.append((r["id"], r["date"], r["desc"], r["category"], fmt_amt(r["amount"], r.get("currency", "INR")), r.get("notes", "")))
+                    amt_str = "-" + fmt_amt(r["amount"], r.get("currency", "INR"))
+                    filtered.append((r["id"], r["date"], r["desc"], r["category"], amt_str, r.get("notes", "")))
             self._tv_fill(tv, filtered)
             
         f_var.trace("w", _apply_filter)

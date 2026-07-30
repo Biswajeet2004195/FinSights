@@ -35,7 +35,47 @@ class BaseDashboard:
                     fieldbackground=EN, background=EN,
                     foreground=TP, arrowcolor=CY,
                     selectbackground=AC, selectforeground=TP)
-        s.map("A.TCombobox", fieldbackground=[("readonly", EN)])
+        s.map("A.TCombobox", fieldbackground=[("readonly", EN)], foreground=[("readonly", TP)])
+
+    def refresh_theme(self):
+        self.root.configure(bg=BG)
+        self._setup_styles()
+        if hasattr(self, "_right_panel") and self._right_panel:
+            try:
+                self._right_panel.configure(fg_color=BG)
+            except Exception:
+                pass
+        if hasattr(self, "_cf") and self._cf:
+            try:
+                self._cf.configure(fg_color=BG)
+            except Exception:
+                pass
+        if hasattr(self, "_sc") and self._sc:
+            self._sc.configure(bg=SB)
+            self._sc.itemconfig("bottom_line", fill=BD)
+            self._sc.itemconfig("bottom_user", fill=TS)
+            self._sc.itemconfig("bottom_copy", fill=TH)
+            self._sc.itemconfig("logo_line", fill=BD)
+            self._sc.itemconfig("right_border", fill=BD)
+            self._sc.event_generate("<Configure>")
+        if hasattr(self, "_hc") and self._hc:
+            self._hc.configure(bg=BG)
+            self._hc.itemconfig(self._htitle, fill=TP)
+            self._hc.itemconfig(self._date_txt, fill=TS)
+            self._hc.itemconfig(self._bell_icon, fill=TP)
+            self._hc.itemconfig(self._month_btn, fill=TP)
+            if hasattr(self, "search_entry"):
+                self.search_entry.configure(bg=EN, fg=TP, insertbackground=CY)
+                if hasattr(self.search_entry, "master"):
+                    self.search_entry.master.configure(bg=EN)
+            self._hc.event_generate("<Configure>")
+            
+        self._set_nav(self.active_nav)
+        
+        # Re-render active view
+        nav_map = {name: cmd for icon, name, cmd in self._nav_data if cmd is not None}
+        if self.active_nav in nav_map:
+            nav_map[self.active_nav]()
 
     def _setup_wheel(self):
         # Bind MouseWheel exactly once globally to prevent memory leaks and locks
@@ -70,6 +110,7 @@ class BaseDashboard:
         # Nav items
         self._nav_data = [
             ("🏠", "Overview",      self.show_overview),
+            ("🔄", "Transactions",  getattr(self, "show_transactions", None)),
             ("💰", "Income",        self.show_income),
             ("💸", "Expenses",      self.show_expenses),
             ("💎", "Net Worth",     getattr(self, "show_net_worth", None)),
@@ -117,18 +158,16 @@ class BaseDashboard:
         def _on_sc_resize(e):
             h = e.height
             sc.delete("gradient")
-            # Sidebar gradient using SB green tones: from #0a1c15 (10, 28, 21) to #050f0b (5, 15, 11)
-            for j in range(h):
-                t = j / max(1, h)
-                r = int(10 - t * 5)
-                g = int(28 - t * 13)
-                b = int(21 - t * 10)
-                sc.create_line(0, j, SIDE_W, j, fill=f"#{r:02x}{g:02x}{b:02x}", tags="gradient")
+            sc.create_rectangle(0, 0, SIDE_W, h, fill=SB, outline="", tags="gradient")
             sc.tag_lower("gradient")
             
             sc.delete("orb")
-            sc.create_oval(-50, -50, 190, 190, fill="#071a12", outline="", tags="orb")
-            sc.create_oval(50, h - 200, 290, h + 50, fill="#05150e", outline="", tags="orb")
+            if GLOBAL_STATE.get("theme", "dark") == "dark":
+                sc.create_oval(-50, -50, 190, 190, fill="#071a12", outline="", tags="orb")
+                sc.create_oval(50, h - 200, 290, h + 50, fill="#05150e", outline="", tags="orb")
+            else:
+                sc.create_oval(-50, -50, 190, 190, fill="#d5e3df", outline="", tags="orb")
+                sc.create_oval(50, h - 200, 290, h + 50, fill="#cce0db", outline="", tags="orb")
             sc.tag_lower("orb")
             sc.tag_lower("gradient")
             
@@ -142,7 +181,6 @@ class BaseDashboard:
             sc.delete("logo_line")
             sc.create_line(16, 82, SIDE_W - 16, 82, fill=BD, width=1, tags="logo_line")
             
-            # Raise the FINSIGHTS logo so it is never hidden
             sc.tag_raise("logo")
             sc.tag_raise("logo_line")
 
@@ -227,10 +265,7 @@ class BaseDashboard:
         def _on_hc_resize(e):
             w = e.width
             hc.delete("gradient")
-            for j in range(HEAD_H):
-                t = j / HEAD_H
-                r = int(22 + t * 10); g = int(22 + t * 10); b = int(23 + t * 10)
-                hc.create_line(0, j, w, j, fill=f"#{r:02x}{g:02x}{b:02x}", tags="gradient")
+            hc.create_rectangle(0, 0, w, HEAD_H, fill=BG, outline="", tags="gradient")
             hc.tag_lower("gradient")
             
             hc.delete("border")
@@ -482,14 +517,32 @@ class BaseDashboard:
         sb.pack(side="right", fill="y")
         tv.tag_configure("odd",  background="#1d1d1f")
         tv.tag_configure("even", background=CB)
+        tv.tag_configure("income", foreground=GR)
+        tv.tag_configure("expense", foreground=RE)
         return f, tv
 
     def _tv_fill(self, tv, rows):
-        """rows = list of tuples; first element is the iid, rest are values."""
+        """rows = list of tuples; first element is the iid, rest are values. Optionally last element can be a tag tuple or tag string if row length exceeds columns+1."""
         tv.delete(*tv.get_children())
+        num_cols = len(tv["columns"])
         for i, row in enumerate(rows):
-            tv.insert("", "end", iid=row[0], values=row[1:],
-                      tags=("odd" if i % 2 else "even",))
+            item_id = str(row[0]) if not tv.exists(str(row[0])) else None
+            # Check if custom tags were appended at end of row tuple
+            row_tags = ["odd" if i % 2 else "even"]
+            if len(row) > num_cols + 1:
+                extra_tag = row[-1]
+                if isinstance(extra_tag, (list, tuple)):
+                    row_tags.extend(extra_tag)
+                elif isinstance(extra_tag, str):
+                    row_tags.append(extra_tag)
+                vals = row[1:-1]
+            else:
+                vals = row[1:]
+            
+            if item_id:
+                tv.insert("", "end", iid=item_id, values=vals, tags=tuple(row_tags))
+            else:
+                tv.insert("", "end", values=vals, tags=tuple(row_tags))
 
     def _dialog(self, title, fields, on_save, defaults=None):
         """Generic modal dialog."""
@@ -511,22 +564,52 @@ class BaseDashboard:
                  bg=CB, fg=TP).pack(padx=20, pady=(14, 2), anchor="w")
         tk.Frame(dlg, bg=BD, height=1).pack(fill="x", padx=20, pady=(0, 6))
 
+        sc_cont = tk.Frame(dlg, bg=BG)
+        sc_cont.pack(fill="both", expand=True)
+        cv = tk.Canvas(sc_cont, bg=BG, bd=0, highlightthickness=0)
+        cv.pack(side="left", fill="both", expand=True)
+        sb = ttk.Scrollbar(sc_cont, orient="vertical", command=cv.yview, style="Vertical.TScrollbar")
+        cv.configure(yscrollcommand=sb.set)
+        body = tk.Frame(cv, bg=BG)
+        bw = cv.create_window(0, 0, anchor="nw", window=body)
+        sb_shown = [False]
+        def _show_sb():
+            cv.update_idletasks()
+            bbox = cv.bbox("all")
+            if bbox and bbox[3] > cv.winfo_height():
+                if not sb_shown[0]:
+                    sb.pack(side="right", fill="y")
+                    sb_shown[0] = True
+            else:
+                if sb_shown[0]:
+                    sb.pack_forget()
+                    sb_shown[0] = False
+        def _cfg(e):
+            cv.configure(scrollregion=cv.bbox("all"))
+            sc_cont.after_idle(_show_sb)
+        def _resize(e):
+            cv.itemconfig(bw, width=e.width)
+            sc_cont.after_idle(_show_sb)
+        body.bind("<Configure>", _cfg)
+        cv.bind("<Configure>", _resize)
+        cv.bind("<MouseWheel>", lambda e: cv.yview_scroll(int(-1 * (e.delta / 40)), "units"))
+
         widgets = {}
         for fd in fields:
-            tk.Label(dlg, text=fd["lbl"], font=("Segoe UI Semibold", 9),
+            tk.Label(body, text=fd["lbl"], font=("Segoe UI Semibold", 9),
                      bg=CB, fg=TS).pack(padx=20, pady=(8, 2), anchor="w")
             if fd["type"] == "combo":
                 var = tk.StringVar()
                 opts = fd.get("opts", [])
                 default_val = (defaults or {}).get(fd["k"], opts[0] if opts else "")
                 var.set(default_val)
-                cb = ttk.Combobox(dlg, textvariable=var, values=opts,
+                cb = ttk.Combobox(body, textvariable=var, values=opts,
                                   font=("Segoe UI Light", 11), state="readonly",
                                   style="A.TCombobox")
                 cb.pack(fill="x", padx=20, ipady=5)
                 widgets[fd["k"]] = var
             else:
-                bdr = tk.Frame(dlg, bg=BD)
+                bdr = tk.Frame(body, bg=BD)
                 bdr.pack(fill="x", padx=20)
                 inn = tk.Frame(bdr, bg=EN)
                 inn.pack(padx=1, pady=1, fill="x")

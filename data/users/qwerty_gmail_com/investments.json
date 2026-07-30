@@ -1,0 +1,24 @@
+[
+  {
+    "id": "1785424098019452",
+    "name": "Reliance",
+    "symbol": "REL",
+    "type": "Stocks",
+    "currency": "INR",
+    "qty": 34.0,
+    "buy_price": 1875.0,
+    "current_price": 2136.0,
+    "notes": ""
+  },
+  {
+    "id": "1785424240737253",
+    "name": "Gold",
+    "symbol": "GLD",
+    "type": "Gold",
+    "currency": "INR",
+    "qty": 25.0,
+    "buy_price": 11000.0,
+    "current_price": 10900.0,
+    "notes": ""
+  }
+]

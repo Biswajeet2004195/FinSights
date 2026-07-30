@@ -33,15 +33,16 @@ class NotificationMixin(BaseDashboard):
                      font=("Segoe UI", 13), bg=BG, fg=TS).pack(pady=60)
             return
 
+        is_dark = GLOBAL_STATE.get("theme", "dark") == "dark"
         NTYPE = {
-            "warning": (GO, "#2c2a1c", "⚠️"),
-            "success": (GR, "#1c2c1c", "✅"),
-            "error":   (RE, "#2c1c1c", "🚨"),
-            "info":    (CY, "#1c282c", "ℹ️"),
+            "warning": (GO, "#2c2a1c" if is_dark else "#fffbe6", "⚠️"),
+            "success": (GR, "#1c2c1c" if is_dark else "#e6f7ed", "✅"),
+            "error":   (RE, "#2c1c1c" if is_dark else "#fff1f0", "🚨"),
+            "info":    (CY, "#1c282c" if is_dark else "#e6f7ff", "ℹ️"),
         }
         for n in sorted(notifs, key=lambda x: x.get("read", False)):
             nt = n.get("type", "info")
-            bdr_clr, bg_clr, icon = NTYPE.get(nt, (CY, "#001a2e", "ℹ️"))
+            bdr_clr, bg_clr, icon = NTYPE.get(nt, (CY, "#1c282c" if is_dark else "#e6f7ff", "ℹ️"))
             nf = ctk.CTkFrame(pg, fg_color=bdr_clr, corner_radius=10); nf.pack(fill="x", padx=20, pady=4)
             nfi = ctk.CTkFrame(nf, fg_color=bg_clr, corner_radius=10); nfi.pack(padx=1, pady=1, fill="x")
             rw = ctk.CTkFrame(nfi, fg_color=bg_clr, corner_radius=10); rw.pack(fill="x", padx=14, pady=10)

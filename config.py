@@ -21,6 +21,7 @@ CR_ENT = 8
 __all__ = [
     '_p', '_ld', '_ldd', '_sv', '_seed',
     'BG', 'SB', 'CB', 'CB2', 'BD', 'AC', 'CY', 'GO', 'GR', 'RE', 'OR', 'PK', 'BL', 'PR', 'TP', 'TS', 'TH', 'EN',
+    'ENTRY_BG', 'ENTRY_BDR', 'CARD_BG', 'CARD_BDR', 'CHART_BG', 'CHART_FG', 'CHART_GRID', 'CHART_LINE',
     'SIDE_W', 'HEAD_H', 'WIN_W', 'WIN_H',
     'EXPENSE_CATS', 'INCOME_CATS', 'INV_TYPES', 'CAT_CLR',
     'fmt_inr', 'fmt_amt', 'fmt_disp', 'GLOBAL_STATE', 'SUPPORTED_CURRENCIES', 'convert_currency', 'get_currency_symbol',
@@ -29,7 +30,9 @@ __all__ = [
     '_ld_users', '_sv_users', 'fade_color',
     'ctk', 'CR_CARD', 'CR_BTN', 'CR_ENT',
     'hash_password', 'verify_password',
-    'BASE_DIR', 'DATA_DIR', '_DATA_CACHE', 'default_date'
+    'BASE_DIR', 'DATA_DIR', '_DATA_CACHE', 'default_date',
+    'get_user_key', 'get_user_dir', 'set_current_user', 'init_user_data',
+    'THEMES', 'apply_theme'
 ]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -52,9 +55,175 @@ def _sv_users(u):
     with open(USER_FILE, "w", encoding="utf-8") as f:
         json.dump(u, f, indent=4)
 
-def _p(n):    return os.path.join(DATA_DIR, f"{n}.json")
-
 _DATA_CACHE = {}
+
+GLOBAL_STATE = {
+    "display_currency": "INR",
+    "selected_month": datetime.now().strftime("%Y-%m"),
+    "current_user": "",
+    "theme": "dark"
+}
+
+THEMES = {
+    "dark": {
+        "BG": "#071510",
+        "SB": "#0a1c15",
+        "CB": "#0f261f",
+        "CB2": "#15342a",
+        "BD": "#1c4437",
+        "AC": "#10b981",
+        "CY": "#00e676",
+        "GO": "#ff9f0a",
+        "GR": "#10b981",
+        "RE": "#ff453a",
+        "OR": "#ff9f0a",
+        "PK": "#ec4899",
+        "BL": "#0ea5e9",
+        "PR": "#a855f7",
+        "TP": "#ffffff",
+        "TS": "#8ca39b",
+        "TH": "#5a6f66",
+        "EN": "#050e0a",
+        "ENTRY_BG": "#050e0a",
+        "ENTRY_BDR": "#1c4437",
+        "CARD_BG": "#0f261f",
+        "CARD_BDR": "#1c4437",
+        "CHART_BG": "#0f261f",
+        "CHART_FG": "#ffffff",
+        "CHART_GRID": "#1c4437",
+        "CHART_LINE": "#10b981"
+    },
+    "light": {
+        "BG": "#f4f7f6",
+        "SB": "#e2ece9",
+        "CB": "#ffffff",
+        "CB2": "#e8f0ec",
+        "BD": "#cbd7d2",
+        "AC": "#059669",
+        "CY": "#00b0ff",
+        "GO": "#d97706",
+        "GR": "#059669",
+        "RE": "#dc2626",
+        "OR": "#ea580c",
+        "PK": "#db2777",
+        "BL": "#0284c7",
+        "PR": "#9333ea",
+        "TP": "#0f172a",
+        "TS": "#475569",
+        "TH": "#94a3b8",
+        "EN": "#ffffff",
+        "ENTRY_BG": "#ffffff",
+        "ENTRY_BDR": "#cbd7d2",
+        "CARD_BG": "#ffffff",
+        "CARD_BDR": "#cbd7d2",
+        "CHART_BG": "#ffffff",
+        "CHART_FG": "#0f172a",
+        "CHART_GRID": "#e2e8f0",
+        "CHART_LINE": "#059669"
+    }
+}
+
+# Initial Default Tokens (Dark)
+BG = THEMES["dark"]["BG"]
+SB = THEMES["dark"]["SB"]
+CB = THEMES["dark"]["CB"]
+CB2 = THEMES["dark"]["CB2"]
+BD = THEMES["dark"]["BD"]
+AC = THEMES["dark"]["AC"]
+CY = THEMES["dark"]["CY"]
+GO = THEMES["dark"]["GO"]
+GR = THEMES["dark"]["GR"]
+RE = THEMES["dark"]["RE"]
+OR = THEMES["dark"]["OR"]
+PK = THEMES["dark"]["PK"]
+BL = THEMES["dark"]["BL"]
+PR = THEMES["dark"]["PR"]
+TP = THEMES["dark"]["TP"]
+TS = THEMES["dark"]["TS"]
+TH = THEMES["dark"]["TH"]
+EN = THEMES["dark"]["EN"]
+ENTRY_BG = THEMES["dark"]["ENTRY_BG"]
+ENTRY_BDR = THEMES["dark"]["ENTRY_BDR"]
+CARD_BG = THEMES["dark"]["CARD_BG"]
+CARD_BDR = THEMES["dark"]["CARD_BDR"]
+CHART_BG = THEMES["dark"]["CHART_BG"]
+CHART_FG = THEMES["dark"]["CHART_FG"]
+CHART_GRID = THEMES["dark"]["CHART_GRID"]
+CHART_LINE = THEMES["dark"]["CHART_LINE"]
+
+def apply_theme(theme_name="Dark"):
+    theme_key = str(theme_name).strip().lower()
+    if theme_key not in THEMES:
+        theme_key = "dark"
+        
+    theme_data = THEMES[theme_key]
+    GLOBAL_STATE["theme"] = theme_key
+    
+    gl = globals()
+    for key, val in theme_data.items():
+        gl[key] = val
+        
+    ctk.set_appearance_mode("light" if theme_key == "light" else "dark")
+    
+    try:
+        from tkinter import ttk
+        s = ttk.Style()
+        s.theme_use("clam")
+        s.configure("A.TCombobox", fieldbackground=theme_data["EN"], background=theme_data["EN"], foreground=theme_data["TP"], arrowcolor=theme_data["AC"])
+        s.map("A.TCombobox", fieldbackground=[("readonly", theme_data["EN"])], foreground=[("readonly", theme_data["TP"])])
+    except Exception:
+        pass
+
+def get_user_key(email=None):
+    if not email:
+        email = GLOBAL_STATE.get("current_user", "")
+    if not email:
+        return "default"
+    import re
+    return re.sub(r'[^a-zA-Z0-9_-]', '_', email.strip().lower())
+
+def get_user_dir(email=None):
+    key = get_user_key(email)
+    user_dir = os.path.join(DATA_DIR, "users", key)
+    os.makedirs(user_dir, exist_ok=True)
+    return user_dir
+
+def init_user_data(email):
+    """Initialize empty data files for a brand-new user.
+    Safe to call even if the directory already has files — only missing files are created.
+    Never touches any other user's data.
+    """
+    import re as _re
+    key = _re.sub(r'[^a-zA-Z0-9_-]', '_', email.strip().lower())
+    user_dir = os.path.join(DATA_DIR, "users", key)
+    os.makedirs(user_dir, exist_ok=True)
+    data_files = ["transactions", "budgets", "investments", "goals",
+                  "notifications", "net_worth", "recurring", "settings"]
+    for fname in data_files:
+        path = os.path.join(user_dir, f"{fname}.json")
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8") as fp:
+                json.dump({} if fname == "settings" else [], fp)
+
+def set_current_user(email):
+    email_clean = email.strip().lower() if email else ""
+    GLOBAL_STATE["current_user"] = email_clean
+    _DATA_CACHE.clear()
+
+    # Ensure directory exists and seed any missing data files with empty defaults.
+    # Legacy root-level files (data/*.json) are deliberately NOT copied here —
+    # every user starts with their own clean, empty data.
+    get_user_dir(email_clean)  # creates directory if needed
+    _seed()
+    _migrate_transactions()
+
+    # Apply the user's saved theme
+    settings = _ldd("settings")
+    user_theme = settings.get("theme", "Dark")
+    apply_theme(user_theme)
+
+def _p(n):
+    return os.path.join(get_user_dir(), f"{n}.json")
 
 def _ld(n):
     if n in _DATA_CACHE:
