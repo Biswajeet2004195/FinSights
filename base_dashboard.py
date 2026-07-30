@@ -113,6 +113,7 @@ class BaseDashboard:
             ("🔄", "Transactions",  getattr(self, "show_transactions", None)),
             ("💰", "Income",        self.show_income),
             ("💸", "Expenses",      self.show_expenses),
+            ("📉", "Analytics",     getattr(self, "show_analytics", None)),
             ("💎", "Net Worth",     getattr(self, "show_net_worth", None)),
             ("🔮", "Forecast",      getattr(self, "show_forecast", None)),
             ("🔁", "Recurring",     getattr(self, "show_recurring", None)),
@@ -545,34 +546,49 @@ class BaseDashboard:
                 tv.insert("", "end", values=vals, tags=tuple(row_tags))
 
     def _dialog(self, title, fields, on_save, defaults=None):
-        """Generic modal dialog."""
+        """Generic modal dialog — fully scrollable with fixed button bar."""
         dlg = tk.Toplevel(self.root)
         dlg.title(title)
         dlg.configure(bg=CB)
         dlg.grab_set()
-        dlg.resizable(False, False)
-        DW = 440
-        DH = min(700, 90 + len(fields) * 74 + 80)
+        dlg.resizable(False, True)
+        DW = 460
+        # Fixed height: 64px header + 80px buttons + up to 6 fields at 74px each;
+        # cap at 640 so it always fits on screen while still scrolling when needed.
+        DH = min(640, 64 + len(fields) * 74 + 80)
+        DH = max(DH, 280)   # minimum usable height
         dlg.geometry(f"{DW}x{DH}")
         dlg.update_idletasks()
         x = (dlg.winfo_screenwidth() - DW) // 2
-        y = (dlg.winfo_screenheight() - DH) // 2
+        y = max(40, (dlg.winfo_screenheight() - DH) // 2)
         dlg.geometry(f"{DW}x{DH}+{x}+{y}")
 
+        # ── Top accent + title (fixed, never scrolls) ──────────────────────────
         tk.Frame(dlg, bg=AC, height=3).pack(fill="x")
         tk.Label(dlg, text=title, font=("Segoe UI Semibold", 13),
                  bg=CB, fg=TP).pack(padx=20, pady=(14, 2), anchor="w")
-        tk.Frame(dlg, bg=BD, height=1).pack(fill="x", padx=20, pady=(0, 6))
+        tk.Frame(dlg, bg=BD, height=1).pack(fill="x", padx=20, pady=(0, 4))
 
-        sc_cont = tk.Frame(dlg, bg=BG)
+        # ── Button row (packed at bottom BEFORE the canvas so it never clips) ──
+        brow = tk.Frame(dlg, bg=CB)
+        brow.pack(fill="x", padx=20, pady=12, side="bottom")
+        tk.Frame(dlg, bg=BD, height=1).pack(fill="x", padx=20, side="bottom")
+
+        # ── Scrollable field area ───────────────────────────────────────────────
+        sc_cont = tk.Frame(dlg, bg=CB)
         sc_cont.pack(fill="both", expand=True)
-        cv = tk.Canvas(sc_cont, bg=BG, bd=0, highlightthickness=0)
-        cv.pack(side="left", fill="both", expand=True)
-        sb = ttk.Scrollbar(sc_cont, orient="vertical", command=cv.yview, style="Vertical.TScrollbar")
+
+        cv = tk.Canvas(sc_cont, bg=CB, bd=0, highlightthickness=0)
+        sb = ttk.Scrollbar(sc_cont, orient="vertical", command=cv.yview,
+                           style="Vertical.TScrollbar")
         cv.configure(yscrollcommand=sb.set)
-        body = tk.Frame(cv, bg=BG)
+        cv.pack(side="left", fill="both", expand=True)
+
+        body = tk.Frame(cv, bg=CB)
         bw = cv.create_window(0, 0, anchor="nw", window=body)
+
         sb_shown = [False]
+
         def _show_sb():
             cv.update_idletasks()
             bbox = cv.bbox("all")
@@ -584,20 +600,24 @@ class BaseDashboard:
                 if sb_shown[0]:
                     sb.pack_forget()
                     sb_shown[0] = False
+
         def _cfg(e):
             cv.configure(scrollregion=cv.bbox("all"))
             sc_cont.after_idle(_show_sb)
+
         def _resize(e):
             cv.itemconfig(bw, width=e.width)
             sc_cont.after_idle(_show_sb)
+
         body.bind("<Configure>", _cfg)
         cv.bind("<Configure>", _resize)
         cv.bind("<MouseWheel>", lambda e: cv.yview_scroll(int(-1 * (e.delta / 40)), "units"))
 
+        # ── Build fields ────────────────────────────────────────────────────────
         widgets = {}
         for fd in fields:
             tk.Label(body, text=fd["lbl"], font=("Segoe UI Semibold", 9),
-                     bg=CB, fg=TS).pack(padx=20, pady=(8, 2), anchor="w")
+                     bg=CB, fg=TS).pack(padx=20, pady=(10, 2), anchor="w")
             if fd["type"] == "combo":
                 var = tk.StringVar()
                 opts = fd.get("opts", [])
@@ -606,15 +626,18 @@ class BaseDashboard:
                 cb = ttk.Combobox(body, textvariable=var, values=opts,
                                   font=("Segoe UI Light", 11), state="readonly",
                                   style="A.TCombobox")
-                cb.pack(fill="x", padx=20, ipady=5)
+                cb.pack(fill="x", padx=20, ipady=5, pady=(0, 4))
                 widgets[fd["k"]] = var
             else:
                 bdr = tk.Frame(body, bg=BD)
-                bdr.pack(fill="x", padx=20)
+                bdr.pack(fill="x", padx=20, pady=(0, 4))
                 inn = tk.Frame(bdr, bg=EN)
                 inn.pack(padx=1, pady=1, fill="x")
+                # Support optional show="*" for password fields
+                show_char = fd.get("show", "")
                 e = tk.Entry(inn, font=("Segoe UI Light", 11), bg=EN, fg=TP,
-                             insertbackground=CY, relief="flat", bd=0)
+                             insertbackground=CY, relief="flat", bd=0,
+                             show=show_char)
                 e.pack(fill="x", ipady=8, padx=10)
                 if defaults and fd["k"] in defaults:
                     e.insert(0, str(defaults[fd["k"]]))
@@ -622,9 +645,10 @@ class BaseDashboard:
                 e.bind("<FocusOut>", lambda ev, b=bdr: b.config(bg=BD))
                 widgets[fd["k"]] = e
 
-        brow = tk.Frame(dlg, bg=CB)
-        brow.pack(fill="x", padx=20, pady=16, side="bottom")
+        # Spacer at bottom of field list so last field isn't cramped
+        tk.Frame(body, bg=CB, height=8).pack()
 
+        # ── Button callbacks ────────────────────────────────────────────────────
         def _ok():
             vals = {k: (w.get() if isinstance(w, tk.StringVar) else w.get())
                     for k, w in widgets.items()}
