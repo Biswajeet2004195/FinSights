@@ -219,7 +219,10 @@ def apply_theme(theme_name="Dark"):
                         if k in m_dict:
                             m_dict[k] = v
 
-    ctk.set_appearance_mode("light" if theme_key == "light" else "dark")
+    # NOTE: Do NOT call ctk.set_appearance_mode() here.
+    # CTk's appearance mode switch triggers internal widget teardown that
+    # destroys canvas-embedded windows (currency selector, search bar) in
+    # the header. All theming is handled via our own color-token system.
 
     try:
         from tkinter import ttk

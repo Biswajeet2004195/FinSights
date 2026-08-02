@@ -64,16 +64,69 @@ class BaseDashboard:
                 self._sc.itemconfig(bar, fill=CY)
             self._sc.event_generate("<Configure>")
         if hasattr(self, "_hc") and self._hc:
-            self._hc.configure(bg=BG)
-            self._hc.itemconfig(self._htitle, fill=TP)
-            self._hc.itemconfig(self._date_txt, fill=TS)
-            self._hc.itemconfig(self._bell_icon, fill=TP)
-            self._hc.itemconfig(self._month_btn, fill=TP)
-            if hasattr(self, "search_entry"):
+            hc = self._hc
+            hc.configure(bg=BG)
+            try:
+                hc.itemconfig(self._htitle, fill=TP)
+            except Exception:
+                pass
+            try:
+                hc.itemconfig(self._date_txt, fill=TS)
+            except Exception:
+                pass
+            try:
+                hc.itemconfig(self._bell_icon, fill=TP)
+            except Exception:
+                pass
+            try:
+                hc.itemconfig(self._month_btn, fill=TP)
+            except Exception:
+                pass
+
+            # Refresh the search entry colors
+            if hasattr(self, "search_entry") and self.search_entry.winfo_exists():
                 self.search_entry.configure(bg=EN, fg=TP, insertbackground=CY)
-                if hasattr(self.search_entry, "master"):
+                try:
                     self.search_entry.master.configure(bg=EN)
-            self._hc.event_generate("<Configure>")
+                except Exception:
+                    pass
+
+            # Refresh currency combobox style (ttk style already updated by apply_theme)
+            if hasattr(self, "curr_cb") and self.curr_cb.winfo_exists():
+                try:
+                    self.curr_cb.configure(style="A.TCombobox")
+                except Exception:
+                    pass
+
+            # Re-embed canvas windows if they were destroyed by CTk internals,
+            # keeping the same position coords so layout is unchanged.
+            try:
+                # Check if the search_bar window item still has a valid embedded widget
+                search_f = self.search_entry.master if hasattr(self, "search_entry") else None
+                if search_f and search_f.winfo_exists():
+                    hc.itemconfig(self._search_window, window=search_f)
+            except Exception:
+                pass
+            try:
+                if hasattr(self, "curr_cb") and self.curr_cb.winfo_exists():
+                    hc.itemconfig(self._curr_cb_window, window=self.curr_cb)
+            except Exception:
+                pass
+
+            # Redraw gradient and border at current width so background color updates
+            w = hc.winfo_width()
+            if w > 1:
+                hc.delete("gradient")
+                hc.create_rectangle(0, 0, w, HEAD_H, fill=BG, outline="", tags="gradient")
+                hc.tag_lower("gradient")
+                hc.delete("border")
+                hc.create_line(0, HEAD_H - 1, w, HEAD_H - 1, fill=BD, width=1, tags="border")
+                # Raise all interactive items above the gradient
+                hc.tag_raise("search_bar")
+                hc.tag_raise("curr_cb")
+                hc.tag_raise("month_sel")
+                hc.tag_raise("date")
+                hc.tag_raise("bell")
             
         self._set_nav(self.active_nav)
         
@@ -290,6 +343,12 @@ class BaseDashboard:
             hc.coords("bell", w - 40, HEAD_H // 2)
             self._bell_x = w - 40
             self._update_bell()
+            # Ensure embedded windows always render above the gradient background
+            hc.tag_raise("search_bar")
+            hc.tag_raise("curr_cb")
+            hc.tag_raise("month_sel")
+            hc.tag_raise("date")
+            hc.tag_raise("bell")
             
         hc.bind("<Configure>", _on_hc_resize)
 
