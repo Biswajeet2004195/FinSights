@@ -57,6 +57,11 @@ class BaseDashboard:
             self._sc.itemconfig("bottom_copy", fill=TH)
             self._sc.itemconfig("logo_line", fill=BD)
             self._sc.itemconfig("right_border", fill=BD)
+            self._sc.itemconfig("logo_fin", fill=TP)
+            self._sc.itemconfig("logo_sights", fill=GO)
+            for hl, bar, ico, lbl in self._nav_hl:
+                self._sc.itemconfig(hl, fill=SEL)
+                self._sc.itemconfig(bar, fill=CY)
             self._sc.event_generate("<Configure>")
         if hasattr(self, "_hc") and self._hc:
             self._hc.configure(bg=BG)
@@ -102,10 +107,10 @@ class BaseDashboard:
         sc = tk.Canvas(self.root, width=SIDE_W, bg=SB, bd=0, highlightthickness=0)
         sc.pack(side="left", fill="y")
         self._sc = sc
-        # FINSIGHTS Logo (White and Amber, unified single word appearance)
+        # FINSIGHTS Logo (White/Dark and Amber, unified single word appearance)
         logo_cx = 90  # Shifted left from SIDE_W // 2 (110)
-        sc.create_text(logo_cx - 2, 36, text="FIN", font=("Segoe UI", 20, "bold"), fill="#ffffff", anchor="e", tags="logo")
-        sc.create_text(logo_cx + 2, 36, text="SIGHTS", font=("Segoe UI", 20, "bold"), fill=GO, anchor="w", tags="logo")
+        sc.create_text(logo_cx - 2, 36, text="FIN", font=("Segoe UI", 20, "bold"), fill=TP, anchor="e", tags=("logo", "logo_fin"))
+        sc.create_text(logo_cx + 2, 36, text="SIGHTS", font=("Segoe UI", 20, "bold"), fill=GO, anchor="w", tags=("logo", "logo_sights"))
 
         # Nav items
         self._nav_data = [
@@ -132,7 +137,7 @@ class BaseDashboard:
         self._nav_hl = []
         for i, (icon, label, cmd) in enumerate(self._nav_data):
             y = 80 + i * 36
-            hl  = sc.create_rectangle(0, y, SIDE_W, y + 32, fill=CB2, outline="", state="hidden")
+            hl  = sc.create_rectangle(0, y, SIDE_W, y + 32, fill=SEL, outline="", state="hidden")
             bar = sc.create_rectangle(0, y, 3, y + 32, fill=CY, outline="", state="hidden")
             ico = sc.create_text(30, y + 16, text=icon, font=("Segoe UI Emoji", 13), fill=TP, anchor="center")
             lbl = sc.create_text(58, y + 16, text=label, font=("Segoe UI", 10), fill=TS, anchor="w")
@@ -140,12 +145,16 @@ class BaseDashboard:
             self._nav_hl.append((hl, bar, ico, lbl))
             sc.tag_bind(f"nv{i}", "<Button-1>", lambda e, c=cmd: c())
             sc.tag_bind(f"nv{i}", "<Enter>",
-                lambda e, l=lbl, ic=ico: (
+                lambda e, idx=i, l=lbl, ic=ico, h=hl: (
+                    sc.itemconfig(h, fill=HOV),
+                    sc.itemconfig(h, state="normal") if self.active_nav != self._nav_data[idx][1] else None,
                     fade_color(sc, l, "fill", TP, steps=5, delay=10, is_canvas_item=True),
                     fade_color(sc, ic, "fill", CY, steps=5, delay=10, is_canvas_item=True)
                 ))
             sc.tag_bind(f"nv{i}", "<Leave>",
-                lambda e, idx2=i, l=lbl, ic=ico: (
+                lambda e, idx2=i, l=lbl, ic=ico, h=hl: (
+                    sc.itemconfig(h, fill=SEL),
+                    sc.itemconfig(h, state="hidden") if self.active_nav != self._nav_data[idx2][1] else None,
                     fade_color(sc, l, "fill", TP if self.active_nav == self._nav_data[idx2][1] else TS, steps=5, delay=10, is_canvas_item=True),
                     fade_color(sc, ic, "fill", CY if self.active_nav == self._nav_data[idx2][1] else TP, steps=5, delay=10, is_canvas_item=True)
                 ))
@@ -167,8 +176,8 @@ class BaseDashboard:
                 sc.create_oval(-50, -50, 190, 190, fill="#071a12", outline="", tags="orb")
                 sc.create_oval(50, h - 200, 290, h + 50, fill="#05150e", outline="", tags="orb")
             else:
-                sc.create_oval(-50, -50, 190, 190, fill="#d5e3df", outline="", tags="orb")
-                sc.create_oval(50, h - 200, 290, h + 50, fill="#cce0db", outline="", tags="orb")
+                sc.create_oval(-50, -50, 190, 190, fill="#E2E8F0", outline="", tags="orb")
+                sc.create_oval(50, h - 200, 290, h + 50, fill="#F1F5F9", outline="", tags="orb")
             sc.tag_lower("orb")
             sc.tag_lower("gradient")
             
@@ -192,11 +201,13 @@ class BaseDashboard:
         sc = self._sc
         for i, (hl, bar, ico, lbl) in enumerate(self._nav_hl):
             if self._nav_data[i][1] == name:
+                sc.itemconfig(hl, fill=SEL)
                 sc.itemconfig(hl, state="normal")
                 sc.itemconfig(bar, state="normal")
                 sc.itemconfig(lbl, fill=TP, font=("Segoe UI", 11, "bold"))
                 sc.itemconfig(ico, fill=CY)
             else:
+                sc.itemconfig(hl, fill=SEL)
                 sc.itemconfig(hl, state="hidden")
                 sc.itemconfig(bar, state="hidden")
                 sc.itemconfig(lbl, fill=TS, font=("Segoe UI", 11))
@@ -399,7 +410,8 @@ class BaseDashboard:
         for idx, r in enumerate(results):
             tv.insert("", "end", values=r, tags=("odd" if idx % 2 else "even",))
             
-        tv.tag_configure("odd", background="#1d1d1f")
+        odd_bg = "#1d1d1f" if GLOBAL_STATE.get("theme", "dark") == "dark" else "#F1F5F9"
+        tv.tag_configure("odd", background=odd_bg)
         tv.tag_configure("even", background=CB)
         
         tk.Button(dlg, text="Close", font=("Segoe UI", 10), bg=BD, fg=TP, bd=0, cursor="hand2", command=dlg.destroy).pack(pady=(0, 15))
@@ -516,7 +528,8 @@ class BaseDashboard:
             tv.column(col, width=widths[i] if widths else 120, minwidth=60, anchor="w")
         tv.pack(side="left", fill="both", expand=True)
         sb.pack(side="right", fill="y")
-        tv.tag_configure("odd",  background="#1d1d1f")
+        odd_bg = "#1d1d1f" if GLOBAL_STATE.get("theme", "dark") == "dark" else "#F1F5F9"
+        tv.tag_configure("odd",  background=odd_bg)
         tv.tag_configure("even", background=CB)
         tv.tag_configure("income", foreground=GR)
         tv.tag_configure("expense", foreground=RE)
@@ -654,11 +667,14 @@ class BaseDashboard:
                     for k, w in widgets.items()}
             on_save(vals, dlg)
 
+        is_dark = GLOBAL_STATE.get("theme", "dark") == "dark"
+        sv_hov = "#6d28d9" if is_dark else "#1D4ED8"
+
         sv = tk.Label(brow, text="  Save  ", font=("Segoe UI", 11, "bold"),
                       bg=AC, fg=TP, cursor="hand2", pady=9, padx=18)
         sv.pack(side="left")
         sv.bind("<Button-1>", lambda e: _ok())
-        sv.bind("<Enter>", lambda e: fade_color(sv, None, "bg", "#6d28d9", steps=6, delay=10))
+        sv.bind("<Enter>", lambda e: fade_color(sv, None, "bg", sv_hov, steps=6, delay=10))
         sv.bind("<Leave>", lambda e: fade_color(sv, None, "bg", AC, steps=6, delay=10))
 
         cn = tk.Label(brow, text="  Cancel  ", font=("Segoe UI", 11),
@@ -674,7 +690,17 @@ class BaseDashboard:
                      bg=color, fg=TP, cursor="hand2", padx=14, pady=7)
         b.pack(side="left", padx=(0, 8))
         b.bind("<Button-1>", lambda e: cmd())
-        hov = "#6d28d9" if color == AC else ("#263147" if color == CB2 else "#0e7c59")
+        is_dark = GLOBAL_STATE.get("theme", "dark") == "dark"
+        if color == AC:
+            hov = "#6d28d9" if is_dark else "#1D4ED8"
+        elif color == CB2:
+            hov = BD
+        elif color == GR:
+            hov = "#0e7c59" if is_dark else "#15803D"
+        elif color == RE:
+            hov = "#b91c1c" if is_dark else "#B91C1C"
+        else:
+            hov = BD
         b.bind("<Enter>", lambda e: fade_color(b, None, "bg", hov, steps=6, delay=10))
         b.bind("<Leave>", lambda e: fade_color(b, None, "bg", color, steps=6, delay=10))
         return b
@@ -893,20 +919,23 @@ class BaseDashboard:
         if mi > 0:
             sr = (mi - me) / mi * 100
             if sr >= 20:
+                bg, border = insight_colors("Positive")
                 insights.append({"icon": "✅", "title": "Great Savings Rate!",
                     "msg": f"You're saving {sr:.1f}% of your income this month — above the 20% target.",
                     "tip": "Keep it up! Invest your surplus in SIPs or index funds.",
-                    "bg": "#1c2c1c", "border": GR, "priority": "Positive"})
+                    "bg": bg, "border": border, "priority": "Positive"})
             elif sr > 0:
+                bg, border = insight_colors("Warning")
                 insights.append({"icon": "⚠️", "title": "Savings Rate Needs Work",
                     "msg": f"Savings rate is {sr:.1f}% this month. Target is 20% ({fmt_disp(mi*0.2)}).",
                     "tip": "Try the 50/30/20 rule: 50% needs, 30% wants, 20% savings.",
-                    "bg": "#2c2a1c", "border": GO, "priority": "Warning"})
+                    "bg": bg, "border": border, "priority": "Warning"})
             else:
+                bg, border = insight_colors("Critical")
                 insights.append({"icon": "🔴", "title": "Spending Exceeds Income!",
                     "msg": f"Spent {fmt_disp(me)} vs income of {fmt_disp(mi)} — deficit of {fmt_disp(me - mi)}.",
                     "tip": "Review discretionary spending and cut non-essentials immediately.",
-                    "bg": "#2c1c1c", "border": RE, "priority": "Critical"})
+                    "bg": bg, "border": border, "priority": "Critical"})
                     
         # Expense Analysis
         spent_by = defaultdict(float)
@@ -929,20 +958,22 @@ class BaseDashboard:
             if isinstance(b_val, (int, float)): b_val = {"amount": float(b_val), "currency": "INR"}
             bgt = convert_currency(b_val["amount"], b_val["currency"], dc)
             pct_b   = top_amt / bgt * 100 if bgt else 0
+            bg, border = insight_colors("Normal")
             insights.append({"icon": "📊", "title": f"Top Expense: {top_cat}",
                 "msg": f"Highest spending: {top_cat} at {fmt_disp(top_amt)} ({pct_b:.0f}% of budget).",
                 "tip": f"Look for small ways to reduce {top_cat} spending next month.",
-                "bg": "#1c222c", "border": AC, "priority": "Normal"})
+                "bg": bg, "border": border, "priority": "Normal"})
                 
         # Month-over-month spending increases
         for cat, amt in spent_by.items():
             if cat in prev_spent and prev_spent[cat] > 0:
                 pct_change = (amt - prev_spent[cat]) / prev_spent[cat] * 100
                 if pct_change > 15: # 15% increase threshold
+                    bg, border = insight_colors("Warning")
                     insights.append({"icon": "📈", "title": f"Spending Spike: {cat}",
                         "msg": f"{cat} spending increased by {pct_change:.1f}% compared to last month.",
                         "tip": f"Review your {cat.lower()} expenses to ensure this spike was planned.",
-                        "bg": "#2c1c1c", "border": OR, "priority": "Warning"})
+                        "bg": bg, "border": border, "priority": "Warning"})
                         
         # Budget Alerts
         for cat, b_val in budgets.items():
@@ -950,20 +981,23 @@ class BaseDashboard:
             bgt = convert_currency(b_val["amount"], b_val["currency"], dc)
             spent = spent_by.get(cat, 0); pct = spent / bgt if bgt else 0
             if pct > 0.9:
+                prio = "Critical" if pct > 1.0 else "Warning"
+                bg, border = insight_colors(prio)
                 insights.append({"icon": "⚠️", "title": f"Budget Alert: {cat}",
                     "msg": f"Used {int(pct*100)}% of {cat} budget. Spent {fmt_disp(spent)} of {fmt_disp(bgt)}.",
                     "tip": "Pause non-essential spending in this category for the rest of the month.",
-                    "bg": "#2c2a1c", "border": GO, "priority": "Critical" if pct > 1.0 else "Warning"})
+                    "bg": bg, "border": border, "priority": prio})
                     
         # Goals Progress
         for g in goals[:2]:
             tgt = convert_currency(float(g["target"]), g.get("currency", "INR"), dc)
             saved = convert_currency(float(g["saved"]), g.get("currency", "INR"), dc)
             pct = saved / tgt * 100 if tgt else 0
+            bg, border = insight_colors("Positive")
             insights.append({"icon": g.get("icon", "🎯"), "title": f"Goal: {g['name']}",
                 "msg": f"{g['name']} is {pct:.0f}% complete. {fmt_disp(saved)} of {fmt_disp(tgt)} saved.",
                 "tip": f"Need {fmt_disp(tgt-saved)} more by {g.get('deadline', 'target date')}.",
-                "bg": "#1c2c2c", "border": CY, "priority": "Positive"})
+                "bg": bg, "border": border, "priority": "Positive"})
                 
         # Investments Analysis
         if invs:
@@ -979,21 +1013,23 @@ class BaseDashboard:
                 for a_type, val in asset_types.items():
                     conc = val / pf_val * 100
                     if conc > 40: # 40% concentration threshold
+                        bg, border = insight_colors("Warning")
                         insights.append({"icon": "⚖️", "title": "Portfolio Concentration",
                             "msg": f"Your portfolio is heavily concentrated in {a_type} ({conc:.0f}%).",
                             "tip": "Diversify your investments across different asset classes to reduce risk.",
-                            "bg": "#2c2a1c", "border": GO, "priority": "Warning"})
+                            "bg": bg, "border": border, "priority": "Warning"})
                         break
                         
             # Performance
             pl      = pf_val - pf_cost; plp = pl / pf_cost * 100 if pf_cost else 0
             direction = "up" if pl >= 0 else "down"
-            clr  = GR if pl >= 0 else RE; bg = "#1c2c1c" if pl >= 0 else "#2c1c1c"
+            prio = "Positive" if pl >= 0 else "Critical"
+            bg, border = insight_colors(prio)
             icon = "📈" if pl >= 0 else "📉"
             insights.append({"icon": icon, "title": "Portfolio Performance",
                 "msg": f"Portfolio is {direction} {fmt_disp(abs(pl))} ({plp:+.1f}%) overall. Total value: {fmt_disp(pf_val)}.",
                 "tip": "Rebalance if any single asset exceeds 30% of portfolio." if pl > 0 else "Consider rupee-cost averaging during downturns.",
-                "bg": bg, "border": clr})
+                "bg": bg, "border": border})
                 
         return insights
 
@@ -1052,7 +1088,7 @@ class BaseDashboard:
         dc_sym = get_currency_symbol(GLOBAL_STATE.get("display_currency", "INR"))
         for i in range(5):
             y = pad_t + int(ch * (1 - i / 4))
-            canvas.create_line(pad_l, y, W - pad_r, y, fill=CB2, dash=(4, 4))
+            canvas.create_line(pad_l, y, W - pad_r, y, fill=CHART_GRID, dash=(4, 4))
             val = int(max_val * i / 4)
             lbl = f"{dc_sym}{val//1000}k" if val >= 1000 else f"{dc_sym}{val}"
             canvas.create_text(pad_l - 4, y, text=lbl, font=("Segoe UI", 7), fill=TH, anchor="e")

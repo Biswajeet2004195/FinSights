@@ -22,6 +22,7 @@ __all__ = [
     '_p', '_ld', '_ldd', '_sv', '_seed',
     'BG', 'SB', 'CB', 'CB2', 'BD', 'AC', 'CY', 'GO', 'GR', 'RE', 'OR', 'PK', 'BL', 'PR', 'TP', 'TS', 'TH', 'EN',
     'ENTRY_BG', 'ENTRY_BDR', 'CARD_BG', 'CARD_BDR', 'CHART_BG', 'CHART_FG', 'CHART_GRID', 'CHART_LINE',
+    'HOV', 'SEL',
     'SIDE_W', 'HEAD_H', 'WIN_W', 'WIN_H',
     'EXPENSE_CATS', 'INCOME_CATS', 'INV_TYPES', 'CAT_CLR',
     'fmt_inr', 'fmt_amt', 'fmt_disp', 'GLOBAL_STATE', 'SUPPORTED_CURRENCIES', 'convert_currency', 'get_currency_symbol',
@@ -32,7 +33,7 @@ __all__ = [
     'hash_password', 'verify_password',
     'BASE_DIR', 'DATA_DIR', '_DATA_CACHE', 'default_date',
     'get_user_key', 'get_user_dir', 'set_current_user', 'init_user_data',
-    'THEMES', 'apply_theme'
+    'THEMES', 'apply_theme', 'get_system_theme', 'insight_colors'
 ]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -91,37 +92,76 @@ THEMES = {
         "CHART_BG": "#0f261f",
         "CHART_FG": "#ffffff",
         "CHART_GRID": "#1c4437",
-        "CHART_LINE": "#10b981"
+        "CHART_LINE": "#10b981",
+        "HOV": "#15342a",
+        "SEL": "#1c4437",
     },
     "light": {
-        "BG": "#f4f7f6",
-        "SB": "#e2ece9",
-        "CB": "#ffffff",
-        "CB2": "#e8f0ec",
-        "BD": "#cbd7d2",
-        "AC": "#059669",
-        "CY": "#00b0ff",
-        "GO": "#d97706",
-        "GR": "#059669",
-        "RE": "#dc2626",
-        "OR": "#ea580c",
-        "PK": "#db2777",
-        "BL": "#0284c7",
-        "PR": "#9333ea",
-        "TP": "#0f172a",
+        "BG": "#F8FAFC",
+        "SB": "#FFFFFF",
+        "CB": "#FFFFFF",
+        "CB2": "#DBEAFE",
+        "BD": "#CBD5E1",
+        "AC": "#2563EB",
+        "CY": "#2563EB",
+        "GO": "#F59E0B",
+        "GR": "#16A34A",
+        "RE": "#DC2626",
+        "OR": "#F59E0B",
+        "PK": "#DB2777",
+        "BL": "#2563EB",
+        "PR": "#7C3AED",
+        "TP": "#0F172A",
         "TS": "#475569",
-        "TH": "#94a3b8",
-        "EN": "#ffffff",
-        "ENTRY_BG": "#ffffff",
-        "ENTRY_BDR": "#cbd7d2",
-        "CARD_BG": "#ffffff",
-        "CARD_BDR": "#cbd7d2",
-        "CHART_BG": "#ffffff",
-        "CHART_FG": "#0f172a",
-        "CHART_GRID": "#e2e8f0",
-        "CHART_LINE": "#059669"
+        "TH": "#64748B",
+        "EN": "#FFFFFF",
+        "ENTRY_BG": "#FFFFFF",
+        "ENTRY_BDR": "#CBD5E1",
+        "CARD_BG": "#FFFFFF",
+        "CARD_BDR": "#CBD5E1",
+        "CHART_BG": "#FFFFFF",
+        "CHART_FG": "#0F172A",
+        "CHART_GRID": "#E2E8F0",
+        "CHART_LINE": "#16A34A",
+        "HOV": "#DBEAFE",
+        "SEL": "#BFDBFE",
     }
 }
+
+
+def get_system_theme():
+    """Detect the OS-level dark/light preference. Returns 'dark' or 'light'."""
+    try:
+        import darkdetect
+        mode = darkdetect.theme()
+        return "light" if mode == "Light" else "dark"
+    except Exception:
+        pass
+    # Windows Registry fallback
+    try:
+        import winreg
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+        )
+        val, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        winreg.CloseKey(key)
+        return "light" if val == 1 else "dark"
+    except Exception:
+        pass
+    return "dark"  # safe fallback
+
+
+def insight_colors(priority):
+    """Return (bg, border) for an insight card based on current theme."""
+    is_dark = GLOBAL_STATE.get("theme", "dark") == "dark"
+    mapping = {
+        "Positive":  ("#1c2c1c" if is_dark else "#F0FFF4", GR),
+        "Warning":   ("#2c2a1c" if is_dark else "#FFFBEB", GO),
+        "Critical":  ("#2c1c1c" if is_dark else "#FFF1F2", RE),
+        "Normal":    ("#1c222c" if is_dark else "#EFF6FF", AC),
+    }
+    return mapping.get(priority, (CB2, BD))
 
 # Initial Default Tokens (Dark)
 BG = THEMES["dark"]["BG"]
@@ -150,27 +190,70 @@ CHART_BG = THEMES["dark"]["CHART_BG"]
 CHART_FG = THEMES["dark"]["CHART_FG"]
 CHART_GRID = THEMES["dark"]["CHART_GRID"]
 CHART_LINE = THEMES["dark"]["CHART_LINE"]
+HOV = THEMES["dark"]["HOV"]
+SEL = THEMES["dark"]["SEL"]
 
 def apply_theme(theme_name="Dark"):
+    """Apply a named theme ('Dark', 'Light', 'System') and update all global tokens."""
     theme_key = str(theme_name).strip().lower()
+    if theme_key == "system":
+        theme_key = get_system_theme()
     if theme_key not in THEMES:
         theme_key = "dark"
-        
+
     theme_data = THEMES[theme_key]
     GLOBAL_STATE["theme"] = theme_key
-    
+
     gl = globals()
     for key, val in theme_data.items():
         gl[key] = val
-        
+
+    # Propagate style tokens dynamically to all modules that imported config variables
+    import sys
+    for mod_name, module in list(sys.modules.items()):
+        if module and mod_name not in ('sys', 'os', 'json', 'datetime', 'config'):
+            m_dict = getattr(module, '__dict__', None)
+            if m_dict:
+                if 'BG' in m_dict and m_dict.get('BASE_DIR') == BASE_DIR:
+                    for k, v in theme_data.items():
+                        if k in m_dict:
+                            m_dict[k] = v
+
     ctk.set_appearance_mode("light" if theme_key == "light" else "dark")
-    
+
     try:
         from tkinter import ttk
         s = ttk.Style()
         s.theme_use("clam")
-        s.configure("A.TCombobox", fieldbackground=theme_data["EN"], background=theme_data["EN"], foreground=theme_data["TP"], arrowcolor=theme_data["AC"])
-        s.map("A.TCombobox", fieldbackground=[("readonly", theme_data["EN"])], foreground=[("readonly", theme_data["TP"])])
+        s.configure("A.TCombobox",
+                    fieldbackground=theme_data["EN"],
+                    background=theme_data["EN"],
+                    foreground=theme_data["TP"],
+                    arrowcolor=theme_data["AC"])
+        s.map("A.TCombobox",
+              fieldbackground=[("readonly", theme_data["EN"])],
+              foreground=[("readonly", theme_data["TP"])])
+        # Treeview (D.Treeview) full restyle
+        s.configure("D.Treeview",
+                    background=theme_data["CB"],
+                    foreground=theme_data["TP"],
+                    fieldbackground=theme_data["CB"],
+                    rowheight=34,
+                    font=("Segoe UI", 10))
+        s.configure("D.Treeview.Heading",
+                    background=theme_data["CB2"],
+                    foreground=theme_data["AC"],
+                    font=("Segoe UI", 10, "bold"),
+                    relief="flat")
+        s.map("D.Treeview",
+              background=[("selected", theme_data["AC"])],
+              foreground=[("selected", theme_data["TP"])])
+        s.configure("Vertical.TScrollbar",
+                    background=theme_data["BD"],
+                    troughcolor=theme_data["CB"],
+                    borderwidth=0,
+                    arrowcolor=theme_data["TS"],
+                    width=8)
     except Exception:
         pass
 
@@ -256,12 +339,8 @@ def _sv(n, d):
     with open(_p(n), "w", encoding="utf-8") as f:
         json.dump(d, f, indent=2)
 
-# ── Colour Tokens ─────────────────────────────────────────────────────────────
-BG  = "#071510";  SB  = "#0a1c15";  CB  = "#0f261f";  CB2 = "#15342a"
-BD  = "#1c4437";  AC  = "#10b981";  CY  = "#00e676";  GO  = "#ff9f0a"
-GR  = "#10b981";  RE  = "#ff453a";  OR  = "#ff9f0a";  PK  = "#ec4899"
-BL  = "#0ea5e9";  PR  = "#a855f7"
-TP  = "#ffffff";  TS  = "#8ca39b";  TH  = "#5a6f66";  EN  = "#050e0a"
+# ── Colour Tokens — always reflect current theme (set by apply_theme) ─────────
+# Do not hard-reset these here; they are managed by apply_theme()
 
 SIDE_W = 220;  HEAD_H = 64;  WIN_W = 1280;  WIN_H = 760
 
@@ -281,10 +360,7 @@ CAT_CLR = {
 from currency_utils import format_amount, convert_currency, SUPPORTED_CURRENCIES, get_currency_symbol
 
 from datetime import datetime
-GLOBAL_STATE = {
-    "display_currency": "INR",
-    "selected_month": datetime.now().strftime("%Y-%m")
-}
+
 
 def fmt_amt(n, from_curr="INR"):
     converted = convert_currency(n, from_curr, GLOBAL_STATE["display_currency"])

@@ -10,9 +10,20 @@ class SettingsMixin:
         self._clear()
 
         f = self._scrollable(self._active_page_frame)
-        self._sec(f, "Preferences", "Customize your Finsights experience.")
+        self._sec(f, "Appearance", "Customize how Finsights looks on your device.")
         
         settings = _ldd("settings")
+        
+        app_f = tk.Frame(f, bg=CB)
+        app_f.pack(fill="x", padx=20, pady=10)
+        
+        # Theme dropdown
+        tk.Label(app_f, text="Theme Mode", font=("Segoe UI Semibold", 10), bg=CB, fg=TS).grid(row=0, column=0, sticky="w", padx=20, pady=(20, 20))
+        self.theme_var = tk.StringVar(value=settings.get("theme", "Dark"))
+        theme_cb = ttk.Combobox(app_f, textvariable=self.theme_var, values=["Dark", "Light", "System"], state="readonly", style="A.TCombobox")
+        theme_cb.grid(row=0, column=1, sticky="w", padx=20, pady=(20, 20))
+
+        self._sec(f, "Preferences", "Customize your Finsights experience.")
         
         form_f = tk.Frame(f, bg=CB)
         form_f.pack(fill="x", padx=20, pady=10)
@@ -42,8 +53,9 @@ class SettingsMixin:
         notif_chk.grid(row=3, column=1, sticky="w", padx=16, pady=10)
         
         def _save_settings():
+            new_theme = self.theme_var.get()
             new_s = {
-                "theme": settings.get("theme", "Dark"),  # preserve existing theme value
+                "theme": new_theme,
                 "default_currency": self.def_curr_var.get(),
                 "language": self.lang_var.get(),
                 "auto_backup": self.auto_backup_var.get(),
@@ -51,12 +63,15 @@ class SettingsMixin:
             }
             _sv("settings", new_s)
             
+            # Apply theme instantly
+            apply_theme(new_theme)
+            
             # Apply currency change globally if changed
             if new_s["default_currency"] != GLOBAL_STATE["display_currency"]:
                 self.currency_var.set(new_s["default_currency"])
                 self._on_currency_change()
             else:
-                self.show_settings()
+                self.refresh_theme()
                 
             tk.messagebox.showinfo("Settings", "Settings saved successfully.")
             

@@ -11,13 +11,14 @@ class InsightMixin(BaseDashboard):
 
         # Header card
         hcard = ctk.CTkFrame(pg, fg_color=BD, corner_radius=10); hcard.pack(fill="x", padx=20, pady=(0, 16))
-        hci = ctk.CTkFrame(hcard, fg_color="#0d1a2e", corner_radius=10); hci.pack(padx=1, pady=1, fill="x")
-        rw = ctk.CTkFrame(hci, fg_color="#0d1a2e", corner_radius=10); rw.pack(fill="x", padx=16, pady=14)
-        tk.Label(rw, text="🤖", font=("Segoe UI Emoji", 30), bg="#0d1a2e", fg=CY).pack(side="left", padx=(0, 14))
-        ri = ctk.CTkFrame(rw, fg_color="#0d1a2e", corner_radius=10); ri.pack(side="left")
-        tk.Label(ri, text="Your Personal Financial AI", font=("Segoe UI Semibold", 14), bg="#0d1a2e", fg=TP).pack(anchor="w")
+        header_bg = "#0d1a2e" if GLOBAL_STATE.get("theme", "dark") == "dark" else "#EFF6FF"
+        hci = ctk.CTkFrame(hcard, fg_color=header_bg, corner_radius=10); hci.pack(padx=1, pady=1, fill="x")
+        rw = ctk.CTkFrame(hci, fg_color=header_bg, corner_radius=10); rw.pack(fill="x", padx=16, pady=14)
+        tk.Label(rw, text="🤖", font=("Segoe UI Emoji", 30), bg=header_bg, fg=CY).pack(side="left", padx=(0, 14))
+        ri = ctk.CTkFrame(rw, fg_color=header_bg, corner_radius=10); ri.pack(side="left")
+        tk.Label(ri, text="Your Personal Financial AI", font=("Segoe UI Semibold", 14), bg=header_bg, fg=TP).pack(anchor="w")
         tk.Label(ri, text="Pattern analysis powered by your transactions, budgets, goals and investments",
-                 font=("Segoe UI Light", 10), bg="#0d1a2e", fg=TS).pack(anchor="w")
+                 font=("Segoe UI Light", 10), bg=header_bg, fg=TS).pack(anchor="w")
 
         for ins in self._gen_insights():
             ic = ctk.CTkFrame(pg, fg_color=BD, corner_radius=10); ic.pack(fill="x", padx=20, pady=5)

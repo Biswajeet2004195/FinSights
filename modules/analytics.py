@@ -137,9 +137,9 @@ class AnalyticsMixin:
         tk.Label(pie_card, text="Spending by Category",
                  font=("Segoe UI", 12, "bold"), bg=CB, fg=TP).pack(pady=(10, 4))
 
-        fig1 = Figure(figsize=(4.8, 3.8), facecolor=CB)
+        fig1 = Figure(figsize=(4.8, 3.8), facecolor=CHART_BG)
         ax1  = fig1.add_subplot(111)
-        ax1.set_facecolor(CB)
+        ax1.set_facecolor(CHART_BG)
 
         if cat_exp:
             labels = list(cat_exp.keys())
@@ -155,8 +155,8 @@ class AnalyticsMixin:
             wedges, _, autotexts = ax1.pie(
                 sizes, labels=None, colors=colors,
                 autopct="%1.0f%%", startangle=90,
-                textprops={"color": TP, "fontsize": 8, "weight": "bold"},
-                pctdistance=0.72, wedgeprops={"linewidth": 0.5, "edgecolor": CB}
+                textprops={"color": CHART_FG, "fontsize": 8, "weight": "bold"},
+                pctdistance=0.72, wedgeprops={"linewidth": 0.5, "edgecolor": CHART_BG}
             )
             ax1.legend(
                 wedges, labels,
@@ -165,7 +165,7 @@ class AnalyticsMixin:
                 bbox_to_anchor=(0.88, 0.5),
                 fontsize=7,
                 title_fontsize=7,
-                facecolor=CB, edgecolor=BD, labelcolor=TP
+                facecolor=CHART_BG, edgecolor=BD, labelcolor=CHART_FG
             )
             fig1.subplots_adjust(right=0.60, left=0.05, top=0.95, bottom=0.05)
         else:
@@ -184,9 +184,9 @@ class AnalyticsMixin:
         tk.Label(bar_card, text="Monthly Income vs Expense",
                  font=("Segoe UI", 12, "bold"), bg=CB, fg=TP).pack(pady=(10, 4))
 
-        fig2 = Figure(figsize=(5.6, 3.8), facecolor=CB)
+        fig2 = Figure(figsize=(5.6, 3.8), facecolor=CHART_BG)
         ax2  = fig2.add_subplot(111)
-        ax2.set_facecolor(CB)
+        ax2.set_facecolor(CHART_BG)
         ax2.tick_params(colors=TS, labelsize=8)
         for sp in ax2.spines.values():
             sp.set_color(BD)
@@ -210,9 +210,9 @@ class AnalyticsMixin:
             short = [datetime.strptime(m, "%Y-%m").strftime("%b'%y")
                      for m in show_months]
             ax2.set_xticklabels(short, rotation=40, ha="right", fontsize=7)
-            leg = ax2.legend(facecolor=CB, edgecolor=BD, labelcolor=TP,
+            leg = ax2.legend(facecolor=CHART_BG, edgecolor=BD, labelcolor=CHART_FG,
                              fontsize=8)
-            ax2.grid(axis="y", color=BD, linewidth=0.5, linestyle="--", alpha=0.7)
+            ax2.grid(axis="y", color=CHART_GRID, linewidth=0.5, linestyle="--", alpha=0.7)
             fig2.subplots_adjust(bottom=0.22, top=0.95, left=0.12, right=0.97)
         else:
             ax2.text(0.5, 0.5, "No data yet",
@@ -234,9 +234,9 @@ class AnalyticsMixin:
                  font=("Segoe UI", 12, "bold"), bg=CB, fg=TP).pack(
                      anchor="w", padx=14, pady=(10, 4))
 
-        fig = Figure(figsize=(10, 2.8), facecolor=CB)
+        fig = Figure(figsize=(10, 2.8), facecolor=CHART_BG)
         ax  = fig.add_subplot(111)
-        ax.set_facecolor(CB)
+        ax.set_facecolor(CHART_BG)
         ax.tick_params(colors=TS, labelsize=8)
         for sp in ax.spines.values():
             sp.set_color(BD)
@@ -263,8 +263,8 @@ class AnalyticsMixin:
                      for m in show_months]
             ax.set_xticks(xs)
             ax.set_xticklabels(short, rotation=40, ha="right", fontsize=7)
-            ax.legend(facecolor=CB, edgecolor=BD, labelcolor=TP, fontsize=8)
-            ax.grid(axis="y", color=BD, linewidth=0.5, linestyle="--", alpha=0.6)
+            ax.legend(facecolor=CHART_BG, edgecolor=BD, labelcolor=CHART_FG, fontsize=8)
+            ax.grid(axis="y", color=CHART_GRID, linewidth=0.5, linestyle="--", alpha=0.6)
             fig.subplots_adjust(bottom=0.22, top=0.94, left=0.08, right=0.98)
         else:
             ax.text(0.5, 0.5, "No transaction data yet",
