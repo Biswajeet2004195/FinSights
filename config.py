@@ -33,7 +33,7 @@ __all__ = [
     'hash_password', 'verify_password',
     'BASE_DIR', 'DATA_DIR', '_DATA_CACHE', 'default_date',
     'get_user_key', 'get_user_dir', 'set_current_user', 'init_user_data',
-    'THEMES', 'apply_theme', 'get_system_theme', 'insight_colors'
+    'THEMES', 'apply_theme', 'get_system_theme', 'insight_colors', 'USER_FILE'
 ]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
