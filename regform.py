@@ -16,11 +16,12 @@ from config import *
 from dashboard import launch_dashboard
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-DIR  = r"D:/infosys"
-FILE = os.path.join(DIR, "users.json")
+DIR  = DATA_DIR
+FILE = USER_FILE
 os.makedirs(DIR, exist_ok=True)
 if not os.path.exists(FILE):
-    json.dump({}, open(FILE, "w"))
+    with open(FILE, "w", encoding="utf-8") as f:
+        json.dump({}, f)
 
 def users():
     return _ld_users()
